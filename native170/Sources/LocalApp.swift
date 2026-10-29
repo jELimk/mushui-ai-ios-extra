@@ -101,7 +101,7 @@ final class NoRedirect:NSObject,URLSessionTaskDelegate{func urlSession(_ session
  DispatchQueue.main.asyncAfter(deadline:.now()+1){[weak self] in self?.checkReady()}
  #if targetEnvironment(simulator)
  DispatchQueue.main.asyncAfter(deadline:.now()+8){[weak self] in guard let self,self.model?.generation==self.generation else{return};
- webView.evaluateJavaScript("(async()=>{try{const prior=await WebEngine.get('qa-startup-recovery');await WebEngine.put('qa-startup-recovery','kept');await Desktop.invoke('startupQA',{ready:typeof state!=='undefined'&&!!state,secure:isSecureContext,crypto:!!crypto.subtle,version:typeof aboutPage==='function'&&aboutPage().includes('1.7.0'),preserved:prior==='kept',body:document.body.innerText.slice(0,180)});}catch(e){await Desktop.invoke('startupQA',{error:e.message});}})();true;",completionHandler:nil)
+ webView.evaluateJavaScript("(async()=>{try{const assetSizes=Object.fromEntries(await Promise.all(['app.js','web-store.js','fonts/zpix.ttf'].map(async name=>{const r=await fetch(name,{cache:'no-store'});if(!r.ok)throw Error('Asset '+name+': '+r.status);return [name,(await r.arrayBuffer()).byteLength];})));const prior=await WebEngine.get('qa-startup-recovery');await WebEngine.put('qa-startup-recovery','kept');await Desktop.invoke('startupQA',{ready:typeof state!=='undefined'&&!!state,secure:isSecureContext,crypto:!!crypto.subtle,version:typeof aboutPage==='function'&&aboutPage().includes('1.7.0'),preserved:prior==='kept',assetSizes,body:document.body.innerText.slice(0,180)});}catch(e){await Desktop.invoke('startupQA',{error:e.message});}})();true;",completionHandler:nil)
 
  }
  #endif
@@ -109,6 +109,7 @@ final class NoRedirect:NSObject,URLSessionTaskDelegate{func urlSession(_ session
  #if targetEnvironment(simulator)
  func finishQA(_ value:[String:Any]){
   guard model?.generation==generation else{return};var report=value
+  let sizes=value["assetSizes"] as? [String:Int] ?? [:];let root=Bundle.main.url(forResource:"www",withExtension:nil)!;report["assetsComplete"] = ["app.js","web-store.js","fonts/zpix.ttf"].allSatisfy{path in guard let bytes=try? Data(contentsOf:root.appendingPathComponent(path)) else{return false};return sizes[path]==bytes.count}
   let round=model?.qaRound ?? 0;let recovery=ProcessInfo.processInfo.arguments.contains("--recovery-qa");report["nativeReady"]=model?.ready ?? false;report["recoveryComplete"] = !recovery || round>=2;report["recoveryRounds"]=round;report["osVersion"]=ProcessInfo.processInfo.operatingSystemVersionString
   let file=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("qa-status.json");if let data=try? JSONSerialization.data(withJSONObject:report){try? data.write(to:file)}
   if recovery && round<2 && report["ready"] as? Bool==true{model?.qaRound=round+1;if round==0,let web{webViewWebContentProcessDidTerminate(web)}else{model?.fail("測試載入失敗提示與重試");DispatchQueue.main.asyncAfter(deadline:.now()+1){[weak self] in self?.model?.start()}}}
