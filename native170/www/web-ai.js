@@ -7,7 +7,7 @@ W.proxy=async(st,path,body,image=false,method='POST')=>{
  const secret=await W.key(image&&st.useImageKey?'image':'chat');if(!secret)throw Error('請先設定並儲存 API 金鑰');
  const headers=st.geminiNative?{'x-goog-api-key':secret}:st.provider==='Claude'?{'x-api-key':secret,'anthropic-version':'2023-06-01'}:{Authorization:'Bearer '+secret};
  const r=await fetch('/v1/proxy',{method:'POST',headers:{'Content-Type':'application/json','X-Mushui-Web-Session':await W.session()},body:JSON.stringify({url:W.url(st.baseUrl)+path,headers,method,body})});
- const data=await r.json();if(!r.ok){const e=Error(('API HTTP '+r.status+'：'+(data.error?.message||data.error||'請檢查連線、金鑰與模型')).replaceAll(secret,'[金鑰]'));e.status=r.status;throw e;}return data;
+ const data=await r.json();if(!r.ok){const detail=r.status===401?'服務拒絕認證。請在這台裝置的「設定 → API」確認 API 金鑰、服務網址與模型；API 金鑰不會隨帳號同步。':(data.error?.message||data.error||'請檢查連線、金鑰與模型');const e=Error(('API HTTP '+r.status+'：'+detail).replaceAll(secret,'[金鑰]'));e.status=r.status;throw e;}return data;
 };
 W.vision=st=>st.visionMode==='on'||st.visionMode!=='off'&&!/^(gpt-3\.5|deepseek-reasoner|deepseek-r1|o3-mini)|text-only/i.test(st.model);
 W.companionContext=(st,running)=>'\n沐水目前的真實能力與狀態（優先於舊聊天或摘要對功能的錯誤推測）：App 有自主排程，使用者離開聊天室、沒有回覆或睡覺，不是不能主動私訊的理由。你在排程 API 請求中依個性決定行動，不是在請求外自行運行。主動訊息設定='+(st.autoMessages?'ON':'OFF')+'；持續陪伴服務='+(running?'運行中':'未運行')+'；自動朋友圈='+(st.autoMoments?'ON':'OFF')+'。不要套用一般聊天網站只能等待使用者的限制。這個網頁／iPhone 網頁引擎的 AI 排程在頁面可執行時運作，切到其他 App、鎖屏或關閉時可能被系統暫停，不能保證背景 AI 排程；真人 Web Push 與原生已接通通話不代表 AI 排程已完成背景服務。OFF 或服務未運行時不可假稱已啟動，可說明設定→AI 的日常→開啟 AI 主動傳訊息並開始持續陪伴。網路、API 與系統停止可能中斷，不保證永遠在線或準時送達。先依個性回應情感，只在使用者詢問能力或排程時才解釋狀態，不要每句重複設定說明。';
@@ -44,7 +44,7 @@ W.compress=async(chatId,aiId,force=false)=>{
  await W.edit(s=>{const c=W.find(s.chats,chatId);c.memories||={};c.memories[aiId]={summary:summary.slice(0,6000),throughId,count:(record?.count||0)+batch.length,updatedAt:Date.now()};delete c.memoryError;});
  }catch(e){await W.edit(s=>{const c=s.chats.find(c=>c.id===chatId);if(c)c.memoryError='記憶整理失敗，原始紀錄保留：'+e.message;});if(force)throw e;}finally{W.active.delete(lock);}
 };
-W.canonicalCard=c=>{if(!c)return null;const result={type:c.type,status:'pending',note:W.clean(c.note,300)};if(c.type==='transfer'){const value=Number(c.amount);if(!(value>0&&value<=999999.99)||!Number.isInteger(Math.round(value*1000)/10))return null;return {...result,amount:value.toFixed(2),currency:'沐水幣'};}if(c.type==='gift'&&c.title?.trim())return {...result,title:W.clean(c.title,120)};return null;};
+W.canonicalCard=c=>{if(!c)return null;const result={type:c.type,status:'pending',note:W.clean(c.note,300)};if(c.type==='transfer'||c.type==='redpacket'){const value=Number(c.amount);if(!(value>0&&value<=999999.99)||!Number.isInteger(Math.round(value*1000)/10))return null;return {...result,amount:value.toFixed(2),currency:'沐水幣'};}if(c.type==='gift'&&c.title?.trim())return {...result,title:W.clean(c.title,120)};return null;};
 W.generate=async(chatId,aiId,provided=null)=>{
  const lock='image:'+aiId;if(W.active.has(lock))throw Error('正在生成圖片');W.active.add(lock);
  try{
@@ -67,7 +67,7 @@ W.generate=async(chatId,aiId,provided=null)=>{
 W.send=async d=>{
  if(W.active.has(d.id))throw Error('AI 正在回覆');W.active.add(d.id);
  try{
- if(!d.retry)await W.edit(s=>{const c=W.find(s.chats,d.id),text=W.clean(d.text,10000),images=W.images(d.images),sticker=W.sticker(d.sticker);if(!text&&!images.length&&!sticker)throw Error('訊息不可空白');if(!d.clientMessageId||!c.messages.some(m=>m.clientMessageId===d.clientMessageId))W.append(c,'me',text,{images,sticker,audio:d.audio||null,clientMessageId:d.clientMessageId,spoilerImages:!!d.spoilerImages});s.activity.lastUser=Date.now();});
+ if(!d.retry)await W.edit(s=>{const c=W.find(s.chats,d.id),text=W.clean(d.text,10000),images=W.images(d.images),sticker=W.sticker(d.sticker);if(!text&&!images.length&&!sticker)throw Error('訊息不可空白');if(!d.clientMessageId||!c.messages.some(m=>m.clientMessageId===d.clientMessageId))W.append(c,'me',text,{images,sticker,audio:d.audio||null,virtualCard:W.canonicalCard(d.virtualCard),clientMessageId:d.clientMessageId,spoilerImages:!!d.spoilerImages});s.activity.lastUser=Date.now();});
  let s=await W.read(),members=[...W.find(s.chats,d.id).members];
  for(const id of members){
  s=await W.read();const a=s.ais.find(a=>a.id===id||(a.aliases||[]).includes(id)),c=s.chats.find(c=>c.id===d.id||(c.aliases||[]).includes(d.id));if(!a||!c)continue;
@@ -78,7 +78,7 @@ W.send=async d=>{
  else{
  await W.compress(d.id,id);await W.ensureAppearance(id);s=await W.read();const ai=W.find(s.ais,id),ch=W.find(s.chats,d.id),st=s.settings;
  let system=W.system(ai)+(d.voiceReply?'\n這是在語音通話，請用150字內自然口語回覆，避免長篇列表。':'')+'\n聊天室記憶：'+(ch.memories?.[id]?.summary||'');
- if(st.virtualCards||st.autoImages)system+='\n回 JSON {text:自然回覆,card:null或純虛擬心意,voice:false或true（只有偶爾適合語音時才為true）,image:null或{kind:photo/avatar/cover/inviteAvatar/inviteCover,scene:完整場景}}。虛擬卡片可為 {type:transfer,amount:52,note:心意} 或 {type:gift,title:虛擬禮物,note:心意}，沒有真實金流或贈送。';
+ if(st.virtualCards||st.autoImages)system+='\n回 JSON {text:自然回覆,card:null或純虛擬心意,voice:false或true（只有偶爾適合語音時才為true）,image:null或{kind:photo/avatar/cover/inviteAvatar/inviteCover,scene:完整場景}}。虛擬卡片可為 {type:transfer,amount:52,note:心意}、{type:redpacket,amount:88,note:手氣紅包} 或 {type:gift,title:虛擬禮物,note:心意}，沒有真實金流或贈送。';
  if(st.autoImages)system+='\n'+W.imageStyle(ai)+'；允許自主換圖='+st.autoIdentityImages+'，使用者換圖邀請='+st.allowImageInvites;
  try{raw=await W.complete(st,system,W.context(s,ai,ch));}
  catch(e){if(photos&&[400,415,422].includes(e.status)&&/image|vision|圖片|照片/i.test(e.message)&&/not support|unsupported|不支援|only text/i.test(e.message))raw='目前模型無法做到辨識照片，請切換模型再試。';else throw e;}

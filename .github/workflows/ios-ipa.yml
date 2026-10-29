@@ -1,5 +1,7 @@
-name: Build Mushui 1.7.0 native IPA
+name: Build Mushui 1.7.1 native IPA
 on:
+  push:
+    branches: [release/1.7.1]
   workflow_dispatch:
 permissions:
   contents: read
@@ -32,7 +34,7 @@ jobs:
           mkdir -p output/Payload
           cp -R build/device/Build/Products/Release-iphoneos/Mushui170.app output/Payload/
           cd output
-          zip -qry Mushui-1.7.0-${{ matrix.edition }}-unsigned.ipa Payload
+          zip -qry Mushui-1.7.1-${{ matrix.edition }}-unsigned.ipa Payload
       - name: Build and run simulator
         env:
           EDITION: ${{ matrix.edition }}
@@ -70,7 +72,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Mushui-1.7.0-${{ matrix.edition }}-native
+          name: Mushui-1.7.1-${{ matrix.edition }}-native
           path: |
             output/*.ipa
             output/*.png

@@ -10,8 +10,11 @@ const contactBeforeSocial=contactModal;
 contactModal=function(id){contactBeforeSocial(id);$('#modalError').insertAdjacentHTML('beforebegin',`<button class="pill full" data-momentprofile="${esc(id)}">${icon('moments')}　看看${esc(ai(id).name)}的朋友圈</button>`);};
 function virtualCardHtml(m){
   const c=m.virtualCard;if(!c)return '';
-  const transfer=c.type==='transfer',pending=c.status==='pending';
-  return `<div class="virtual-card" data-virtual-card="${esc(m.id)}"><div class="flex">${icon(transfer?'cloud':'gift')}<strong>${transfer?'虛擬轉帳':'虛擬禮物'}</strong></div><div class="virtual-value">${transfer?esc(c.amount)+' <small>沐水幣</small>':esc(c.title)}</div>${c.note?`<p>${esc(c.note)}</p>`:''}<div class="virtual-disclaimer">僅 App 內顯示 · 無真實金流或贈送</div>${pending?`<div class="card-actions"><button class="pill primary" data-cardaccept="${esc(m.id)}">${transfer?'領取心意':'收下禮物'}</button><button class="link-button" data-carddecline="${esc(m.id)}">婉拒</button></div>`:`<div class="small">${c.status==='accepted'?'已收下這份虛擬心意':'已婉拒'}</div>`}</div>`;
+  const transfer=c.type==='transfer',packet=c.type==='redpacket',pending=c.status==='pending',mine=m.author==='me'||(m.sender&&m.sender===humanData().me.id),name=packet?'沐水紅包':transfer?'虛擬轉帳':'虛擬禮物';
+  const value=packet||transfer?esc(c.amount)+' <small>沐水幣</small>':esc(c.title);
+  const detail=packet&&c.status==='claimed'?(c.winner==='me'||c.winner===humanData().me.id?'你搶到了 '+esc(c.claimedAmount)+' 沐水幣':(c.winnerName||'好友')+' 搶到了紅包'):c.status==='accepted'?'已收下這份虛擬心意':c.status==='declined'?'已婉拒':'只在 App 內顯示 · 沒有真實金流';
+  const controls=pending&&!mine?`<div class="card-actions"><button class="pill primary" data-cardaccept="${esc(m.id)}">${packet?'開啟紅包':transfer?'收下轉帳':'收下禮物'}</button><button class="link-button" data-carddecline="${esc(m.id)}">婉拒</button></div>`:pending?'<div class="small">已送出，等待對方收取</div>':`<div class="small">${detail}</div>`;
+  return `<div class="virtual-card ${packet?'red-packet-card':''}" data-virtual-card="${esc(m.id)}"><div class="flex">${icon(packet?'gift':transfer?'cloud':'gift')}<strong>${name}</strong></div><div class="virtual-value">${value}</div>${c.note?`<p>${esc(c.note)}</p>`:''}<div class="virtual-disclaimer">${packet?'手氣均等隨機 · ':''}純虛擬沐水幣 · 無現金價值</div>${controls}</div>`;
 }
 function invitationHtml(m){
   const invite=m.imageInvite;if(!invite)return '';
@@ -32,7 +35,7 @@ document.addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b||b.disabled)return;
   try{
     if(b.dataset.momentprofile){if(chatId)momentReturnChat=chatId;else if(tab!=='moments')momentReturnChat='';const id=b.dataset.momentprofile;if(id!=='me'&&!state.ais.some(a=>a.id===id)){toast('這位 AI 已移除');return;}closeModal();await navigate('moments');if(tab==='moments'){momentProfileId=id;coverExpanded=false;render();window.scrollTo(0,0);}}
-    if(b.dataset.cardaccept||b.dataset.carddecline){await mutate('virtualCard',{id:chatId,messageId:b.dataset.cardaccept||b.dataset.carddecline,decline:!!b.dataset.carddecline});render();toast(b.dataset.carddecline?'已婉拒這份虛擬心意':'已收下虛擬心意，沒有真實金流',1200);}
+    if(b.dataset.cardaccept||b.dataset.carddecline){const result=await call('virtualCard',{id:chatId,messageId:b.dataset.cardaccept||b.dataset.carddecline,decline:!!b.dataset.carddecline});state=result.state;render();const claim=result?.claim;toast(b.dataset.carddecline?'已婉拒這份虛擬心意':claim?claim.winner==='me'||claim.winner===humanData().me.id?'手氣不錯，搶到 '+claim.claimedAmount+' 沐水幣':'這次由對方搶到紅包':'已收下虛擬心意',2200);}
     if(b.dataset.dismissinvite)await updateInvite(b.dataset.dismissinvite,{dismiss:true});
     if(b.dataset.custominvite){const id=b.dataset.custominvite,image=await pickImage();if(image){await updateInvite(id,{image});toast('圖片已更換',1000);}}
     if(b.dataset.acceptinvite){const id=b.dataset.acceptinvite,ch=state.chats.find(c=>c.id===chatId),m=ch.messages.find(m=>m.id===id);showModal('預覽圖片邀請',`<img class="photo-view" src="${esc(m.images[0])}" alt="AI 邀請使用的圖片"><p class="help">套用後會更換你的${m.imageInvite.target==='avatar'?'頭像':'朋友圈背景'}，不會影響 AI 的固定外貌。</p><div class="sheet-actions"><button class="pill" data-action="closeModal">再想想</button><button class="pill primary" data-applyinvite="${esc(id)}">確認套用</button></div>`);}

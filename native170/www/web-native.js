@@ -23,7 +23,7 @@ W.humanSyncing=false;
 W.humanSync=async()=>{if(W.humanSyncing)return;W.humanSyncing=true;try{
  for(let page=0;page<100;page++){
  const s=await W.read(),h=s.human,data=await W.humanRequest('/v1/sync?since='+(h.cursor||0));
- await W.edit(s=>{const h=s.human;if(h.me.id!==data.me.id)return;h.me=data.me;h.friends=data.friends.map(p=>({...p,favorite:h.friends.find(f=>f.id===p.id)?.favorite||false}));h.requests=data.requests;h.relationshipRequests=data.relationshipRequests||[];for(const m of data.messages){if(+m.id>(h.cursor||0)){h.messages.push(m);h.cursor=+m.id;}}h.lastSync=Date.now();h.lastError='';});
+ await W.edit(s=>{const h=s.human;if(h.me.id!==data.me.id)return;h.me=data.me;h.friends=data.friends.map(p=>({...p,favorite:h.friends.find(f=>f.id===p.id)?.favorite||false}));h.requests=data.requests;h.relationshipRequests=data.relationshipRequests||[];for(const m of data.messages){if(+m.id>(h.cursor||0)){h.messages.push(m);h.cursor=+m.id;}}for(const u of data.readUpdates||[]){const sent=h.messages.find(m=>String(m.id)===String(u.id));if(sent)sent.readAt=u.readAt;}h.lastSync=Date.now();h.lastError='';});
  if(!data.hasMore)break;
  }
  }catch(e){await W.edit(s=>{s.human.lastError=e.message;});throw e;}finally{W.humanSyncing=false;}};

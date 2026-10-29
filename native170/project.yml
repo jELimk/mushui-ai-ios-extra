@@ -20,8 +20,8 @@ targets:
       path: Info.plist
       properties:
         CFBundleDisplayName: 沐水
-        CFBundleShortVersionString: 1.7.0
-        CFBundleVersion: '12'
+        CFBundleShortVersionString: 1.7.1
+        CFBundleVersion: '13'
         UILaunchScreen: {}
         NSMicrophoneUsageDescription: 用於你啟動的語音訊息與通話。
         NSCameraUsageDescription: 用於你選擇的系統拍照與視訊通話。
