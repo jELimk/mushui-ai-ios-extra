@@ -12,6 +12,14 @@ import UserNotifications
         if let folder = try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true), let data = try? Data(contentsOf: folder.appendingPathComponent("MushuiAI/startup-font.json")), let json = String(data:data,encoding:.utf8) {
             webView?.configuration.userContentController.addUserScript(WKUserScript(source:"window.mushuiStartupFont=\(json);",injectionTime:.atDocumentStart,forMainFrameOnly:true))
         }
+        #if targetEnvironment(simulator)
+        webView?.configuration.userContentController.addUserScript(WKUserScript(source:"window.MushuiBootErrors=[];addEventListener('error',e=>MushuiBootErrors.push(e.message));addEventListener('unhandledrejection',e=>MushuiBootErrors.push(String(e.reason)));",injectionTime:.atDocumentStart,forMainFrameOnly:true))
+        DispatchQueue.main.asyncAfter(deadline:.now()+12) { [weak self] in
+            self?.webView?.evaluateJavaScript("JSON.stringify({ready:typeof state!=='undefined'&&!!state,body:document.body.innerText.slice(0,350),errors:window.MushuiBootErrors,cap:typeof Capacitor,plugins:typeof Capacitor==='undefined'?[]:Object.keys(Capacitor.Plugins||{}),pending:typeof pending==='undefined'?-1:pending.size})") { result,error in
+                if let folder=try? FileManager.default.url(for:.applicationSupportDirectory,in:.userDomainMask,appropriateFor:nil,create:true) { try? Data(((result as? String) ?? error?.localizedDescription ?? "no-result").utf8).write(to:folder.appendingPathComponent("qa-status.json")) }
+            }
+        }
+        #endif
         webView?.scrollView.isScrollEnabled = false
         webView?.scrollView.contentInsetAdjustmentBehavior = .never
     }
