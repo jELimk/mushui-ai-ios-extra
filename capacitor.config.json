@@ -1,0 +1,17 @@
+{
+  "appId": "app.mushui.ai.extra",
+  "appName": "沐水AI",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  },
+  "server": {
+    "iosScheme": "capacitor",
+    "hostname": "localhost"
+  }
+}

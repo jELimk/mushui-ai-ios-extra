@@ -1,0 +1,17 @@
+{
+  "name": "mushui-ai-ios-extra",
+  "version": "1.6.1",
+  "private": true,
+  "description": "Standalone AI-only extra edition; mainline remains Mushui 1.6.1",
+  "scripts": {
+    "sync": "npx cap sync ios",
+    "test": "node tests/ai-only.cjs"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.6.0",
+    "@capacitor/ios": "8.6.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.0"
+  }
+}

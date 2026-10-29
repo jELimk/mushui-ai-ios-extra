@@ -1,0 +1,10 @@
+node_modules/
+tools/
+build/
+output/
+.DS_Store
+*.p12
+*.p8
+*.jks
+*.mobileprovision
+BASELINE-1.6.1.json
