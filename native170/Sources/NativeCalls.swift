@@ -126,7 +126,7 @@ import WebRTC
     }
     private func answer() async throws {
         guard let offer else { throw problem("通話已結束") }; incoming = false
-        try await prepare(incoming:true); try await remote(offer); for transceiver in pc?.transceivers ?? [] where transceiver.mediaType == .video { try transceiver.setDirection(.sendRecv) }; let s = try await description(answer: true); try await local(s)
+        try await prepare(incoming:true); try await remote(offer); for transceiver in pc?.transceivers ?? [] where transceiver.mediaType == .video { var directionError:NSError?;transceiver.setDirection(.sendRecv,error:&directionError);if let directionError{throw directionError} }; let s = try await description(answer: true); try await local(s)
         _ = try await request("answer", ["id": callID, "answer": ["type": "answer", "sdp": s.sdp]])
         await flushICE(); message = "正在連線…"
     }
