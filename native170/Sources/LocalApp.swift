@@ -9,27 +9,56 @@ import WebRTC
 
 final class LocalServer {
  let listener:NWListener;let queue=DispatchQueue(label:"mushui.local.http");let root:URL
- init(ready:@escaping(URL)->Void)throws{root=Bundle.main.url(forResource:"www",withExtension:nil)!;let p=NWParameters.tcp;p.requiredLocalEndpoint = .hostPort(host:"127.0.0.1",port:.any);listener=try NWListener(using:p);listener.stateUpdateHandler={ [weak self] state in if case .ready=state,let port=self?.listener.port{ready(URL(string:"http://127.0.0.1:\(port.rawValue)/index.html")!)} };listener.newConnectionHandler={ [weak self] c in guard let self else{c.cancel();return};c.start(queue:self.queue);self.read(c,Data()) };listener.start(queue:queue)}
+ init(ready:@escaping(URL)->Void,failed:@escaping(String)->Void)throws{guard let bundled=Bundle.main.url(forResource:"www",withExtension:nil) else{throw NSError(domain:"MushuiStartup",code:1,userInfo:[NSLocalizedDescriptionKey:"安裝包缺少介面檔案"])};root=bundled;let p=NWParameters.tcp;p.requiredLocalEndpoint = .hostPort(host:"127.0.0.1",port:.any);listener=try NWListener(using:p);listener.stateUpdateHandler={ [weak self] state in if case .ready=state,let port=self?.listener.port{ready(URL(string:"http://127.0.0.1:\(port.rawValue)/index.html")!)};if case .failed(let error)=state{failed(error.localizedDescription)} };listener.newConnectionHandler={ [weak self] c in guard let self else{c.cancel();return};c.start(queue:self.queue);self.read(c,Data()) };listener.start(queue:queue)}
  func read(_ c:NWConnection,_ prior:Data){c.receive(minimumIncompleteLength:1,maximumLength:65536){[weak self] data,_,done,error in guard let self else{return};var all=prior;if let data{all.append(data)};if all.count>65536{c.cancel();return};guard let header=String(data:all,encoding:.utf8),header.contains("\r\n\r\n") else{if done||error != nil{c.cancel()}else{self.read(c,all)};return};let parts=header.components(separatedBy:"\r\n")[0].split(separator:" ");guard parts.count>=2,parts[0]=="GET"||parts[0]=="HEAD",let url=URL(string:"http://localhost"+String(parts[1])) else{c.cancel();return};let file=self.root.appendingPathComponent(url.path=="/" ? "index.html":String(url.path.dropFirst())).standardizedFileURL;let valid=file.path.hasPrefix(self.root.path+"/");let bytes=valid ? (try? Data(contentsOf:file)):nil;let status=bytes==nil ? "404 Not Found":"200 OK",body=bytes ?? Data();let ext=file.pathExtension.lowercased(),mime=["html":"text/html; charset=utf-8","js":"application/javascript; charset=utf-8","css":"text/css; charset=utf-8","png":"image/png","gif":"image/gif","ttf":"font/ttf","webmanifest":"application/manifest+json"][ext] ?? "application/octet-stream";var result=Data("HTTP/1.1 \(status)\r\nContent-Type: \(mime)\r\nContent-Length: \(body.count)\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n".utf8);if parts[0] != "HEAD"{result.append(body)};c.send(content:result,completion:.contentProcessed({_ in c.cancel()}))}}
 }
 final class NoRedirect:NSObject,URLSessionTaskDelegate{func urlSession(_ session:URLSession,task:URLSessionTask,willPerformHTTPRedirection response:HTTPURLResponse,newRequest request:URLRequest,completionHandler:@escaping(URLRequest?)->Void){completionHandler(nil)}}
-@MainActor final class AppModel:ObservableObject{
- @Published var url:URL?;let calls=NativeCalls();var server:LocalServer?
- init(){do{server=try LocalServer{[weak self] url in Task{@MainActor in self?.url=url}}}catch{print(error)}}
+@MainActor final class AppModel:ObservableObject {
+ @Published var url:URL?
+ @Published var ready=false
+ @Published var error=""
+ @Published var generation=0
+ let calls=NativeCalls()
+ var server:LocalServer?
+ weak var host:Host?
+ private var attempts=0
+ var qaRound=0
+ init(){start()}
+ func start(){ready=false;error="";url=nil;generation+=1;server?.listener.cancel();server=nil
+  do{server=try LocalServer(ready:{[weak self] url in Task{@MainActor in self?.url=url}},failed:{[weak self] error in Task{@MainActor in self?.fail("本機介面服務無法啟動："+error)}})}catch{fail(error.localizedDescription)}
+ }
+ func fail(_ message:String){ready=false;error=message}
+ func loaded(){ready=true;error="";attempts=0}
+ func recover(_ reason:String){guard attempts<2 else{fail(reason+"。請按重新載入，資料不會刪除。");return};attempts+=1;start()}
+ func foreground(){guard ready && error.isEmpty else{return};host?.checkReady(resuming:true)}
+ func exportBackup(){guard let host else{return};do{let data=try Data(contentsOf:host.path("state"));let wrapped=try JSONSerialization.jsonObject(with:data) as? [String:Any];guard let state=wrapped?["value"] else{throw host.failure("目前沒有可匯出的本機資料")};let url=FileManager.default.temporaryDirectory.appendingPathComponent("沐水-啟動救援備份.json");try JSONSerialization.data(withJSONObject:state,options:.prettyPrinted).write(to:url);let vc=UIActivityViewController(activityItems:[url],applicationActivities:nil);if let view=host.parent()?.view,let pop=vc.popoverPresentationController{pop.sourceView=view;pop.sourceRect=CGRect(x:view.bounds.midX,y:view.bounds.midY,width:1,height:1)};host.parent()?.present(vc,animated:true)}catch{self.error=error.localizedDescription}}
 }
-@main @MainActor struct Mushui170App:App{
+@main @MainActor struct Mushui170App:App {
  @StateObject var model=AppModel()
- var body:some Scene{WindowGroup{ZStack{Color(red:0.98,green:0.96,blue:0.99).ignoresSafeArea();if let url=model.url{LocalWeb(url:url,calls:model.calls).ignoresSafeArea()}else{Text("沐水").font(.largeTitle)};NativeCallPanel(calls:model.calls)}}}
+ @Environment(\.scenePhase) var phase
+ var body:some Scene{WindowGroup{ZStack{
+  Color(red:0.98,green:0.96,blue:0.99).ignoresSafeArea()
+  if let url=model.url{LocalWeb(url:url,model:model).id(model.generation).ignoresSafeArea()}
+  if !model.ready{VStack(spacing:20){Text("沐水").font(.largeTitle).foregroundStyle(Color.purple);if model.error.isEmpty{ProgressView();Text("正在開啟你的日常…")}else{Text("暫時無法顯示畫面").font(.headline);Text(model.error).font(.caption).multilineTextAlignment(.center);Button("重新載入"){model.start()}.buttonStyle(.borderedProminent);Button("匯出本機備份"){model.exportBackup()}}.padding(30).frame(maxWidth:.infinity,maxHeight:.infinity).background(Color(red:0.98,green:0.96,blue:0.99))}
+  NativeCallPanel(calls:model.calls)
+ }.onChange(of:phase){value in if value == .active{model.foreground()}}}}
 }
-@MainActor struct LocalWeb:UIViewRepresentable{
- let url:URL;let calls:NativeCalls
- func makeCoordinator()->Host{Host(url:url,calls:calls)}
- func makeUIView(context:Context)->WKWebView{let cfg=WKWebViewConfiguration();cfg.allowsInlineMediaPlayback=true;cfg.mediaTypesRequiringUserActionForPlayback=[];cfg.userContentController.add(context.coordinator,name:"mushuiHost");cfg.userContentController.add(context.coordinator,name:"mushuiCall");let v=WKWebView(frame:.zero,configuration:cfg);context.coordinator.web=v;v.navigationDelegate=context.coordinator;v.uiDelegate=context.coordinator;v.scrollView.isScrollEnabled=false;v.scrollView.contentInsetAdjustmentBehavior = .never;v.load(URLRequest(url:url));return v}
+@MainActor struct LocalWeb:UIViewRepresentable {
+ let url:URL;let model:AppModel
+ func makeCoordinator()->Host{Host(url:url,model:model)}
+ func makeUIView(context:Context)->WKWebView{let cfg=WKWebViewConfiguration();cfg.allowsInlineMediaPlayback=true;cfg.mediaTypesRequiringUserActionForPlayback=[];cfg.defaultWebpagePreferences.allowsContentJavaScript=true;cfg.userContentController.add(context.coordinator,name:"mushuiHost");cfg.userContentController.add(context.coordinator,name:"mushuiCall");let v=WKWebView(frame:.zero,configuration:cfg);v.isOpaque=false;v.backgroundColor=UIColor(red:0.98,green:0.96,blue:0.99,alpha:1);v.scrollView.backgroundColor=v.backgroundColor;context.coordinator.web=v;model.host=context.coordinator;v.navigationDelegate=context.coordinator;v.uiDelegate=context.coordinator;v.scrollView.isScrollEnabled=false;v.scrollView.contentInsetAdjustmentBehavior = .never;v.load(URLRequest(url:url));context.coordinator.armWatchdog();return v}
  func updateUIView(_ view:WKWebView,context:Context){}
+ static func dismantleUIView(_ view:WKWebView,coordinator:Host){coordinator.watchdog?.cancel();view.stopLoading();view.configuration.userContentController.removeScriptMessageHandler(forName:"mushuiHost");view.configuration.userContentController.removeScriptMessageHandler(forName:"mushuiCall")}
 }
 @MainActor final class Host:NSObject,WKScriptMessageHandler,WKNavigationDelegate,WKUIDelegate,UIImagePickerControllerDelegate,UINavigationControllerDelegate,CLLocationManagerDelegate{
- let origin:URL;let calls:NativeCalls;weak var web:WKWebView?;var cameraCall:String?;var locationCall:String?;var location:CLLocationManager?;let redirect=NoRedirect()
- init(url:URL,calls:NativeCalls){origin=url;self.calls=calls}
+ let origin:URL;let calls:NativeCalls;let generation:Int;weak var model:AppModel?;weak var web:WKWebView?;var watchdog:DispatchWorkItem?;var cameraCall:String?;var locationCall:String?;var location:CLLocationManager?;let redirect=NoRedirect()
+ init(url:URL,model:AppModel){origin=url;calls=model.calls;generation=model.generation;self.model=model}
+ func armWatchdog(){watchdog?.cancel();let work=DispatchWorkItem{[weak self] in self?.checkReady()};watchdog=work;DispatchQueue.main.asyncAfter(deadline:.now()+15,execute:work)}
+ func checkReady(resuming:Bool=false){guard model?.generation==generation,let web else{return};web.evaluateJavaScript("typeof state!=='undefined'&&!!state&&!!document.querySelector('#app .page,#app .conversation,#app .desktop-shell')"){[weak self] value,error in guard let self,self.model?.generation==self.generation else{return};if value as? Bool==true{self.watchdog?.cancel();self.model?.loaded()}else if resuming{self.model?.recover("從背景恢復時介面已被系統回收")}else{self.model?.fail("介面未完成啟動。"+(error.map{" "+$0.localizedDescription} ?? "可重新載入或匯出本機備份。"))}}}
+ func webViewWebContentProcessDidTerminate(_ webView:WKWebView){guard model?.generation==generation else{return};watchdog?.cancel();model?.recover("介面程序已被系統回收")}
+ func webView(_ webView:WKWebView,didFailProvisionalNavigation navigation:WKNavigation!,withError error:Error){if (error as NSError).code != NSURLErrorCancelled{watchdog?.cancel();model?.fail("載入失敗（\((error as NSError).code)）："+error.localizedDescription)}}
+ func webView(_ webView:WKWebView,didFail navigation:WKNavigation!,withError error:Error){self.webView(webView,didFailProvisionalNavigation:navigation,withError:error)}
+
  func path(_ key:String)throws->URL{let folder=try FileManager.default.url(for:.applicationSupportDirectory,in:.userDomainMask,appropriateFor:nil,create:true).appendingPathComponent(Bundle.main.bundleIdentifier=="app.mushui.ai.personal" ? "MushuiAI":"Mushui",isDirectory:true);try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true);let safe=key.data(using:.utf8)!.base64EncodedString().replacingOccurrences(of:"/",with:"_").replacingOccurrences(of:"+",with:"-");return folder.appendingPathComponent((key=="state" ? "state":String(safe.prefix(180)))+".json")}
  func reply(_ id:String,_ value:Any?=nil,_ error:String?=nil){var response:[String:Any]=["id":id,"ok":error==nil];if let error{response["error"]=error}else{response["data"]=value ?? NSNull()};if let data=try? JSONSerialization.data(withJSONObject:response),let json=String(data:data,encoding:.utf8){web?.evaluateJavaScript("window.iosHostResult&&iosHostResult(\(json));",completionHandler:nil)}}
  func userContentController(_ userContentController:WKUserContentController,didReceive message:WKScriptMessage){guard message.frameInfo.isMainFrame,message.frameInfo.securityOrigin.host=="127.0.0.1",message.frameInfo.securityOrigin.port==origin.port else{return};guard let d=message.body as? [String:Any] else{return};if message.name=="mushuiCall"{if let server=d["server"] as? String,let u=URL(string:server),u.scheme=="https"{calls.receive(d)};return};guard let id=d["id"] as? String,let op=d["op"] as? String else{return};let args=d["data"] as? [String:Any] ?? [:];Task{do{switch op{
@@ -61,8 +90,17 @@ final class NoRedirect:NSObject,URLSessionTaskDelegate{func urlSession(_ session
  func webView(_ webView:WKWebView,decidePolicyFor action:WKNavigationAction,decisionHandler:@escaping(WKNavigationActionPolicy)->Void){if let u=action.request.url,u.host==origin.host,u.port==origin.port{decisionHandler(.allow)}else{if action.navigationType == .linkActivated,let u=action.request.url,["https","http"].contains(u.scheme ?? ""){UIApplication.shared.open(u)};decisionHandler(.cancel)}}
  func webView(_ webView:WKWebView,requestMediaCapturePermissionFor origin:WKSecurityOrigin,initiatedByFrame frame:WKFrameInfo,type:WKMediaCaptureType,decisionHandler:@escaping(WKPermissionDecision)->Void){decisionHandler(origin.host==self.origin.host && origin.port==self.origin.port ? .prompt:.deny)}
  func webView(_ webView:WKWebView,didFinish navigation:WKNavigation!){
+ DispatchQueue.main.asyncAfter(deadline:.now()+1){[weak self] in self?.checkReady()}
  #if targetEnvironment(simulator)
- DispatchQueue.main.asyncAfter(deadline:.now()+8){webView.evaluateJavaScript("JSON.stringify({ready:typeof state!=='undefined'&&!!state,secure:isSecureContext,crypto:!!crypto.subtle,version:typeof aboutPage==='function'&&aboutPage().includes('1.7.0'),body:document.body.innerText.slice(0,180)})"){value,error in let file=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("qa-status.json");try? Data(((value as? String) ?? error?.localizedDescription ?? "no data").utf8).write(to:file)}}
+ DispatchQueue.main.asyncAfter(deadline:.now()+8){[weak self] in guard let self,self.model?.generation==self.generation else{return};
+ // WK evaluateJavaScript does not await promises; callAsyncJavaScript is used for the recovery probe.
+ webView.callAsyncJavaScript("const prior=await WebEngine.get('qa-startup-recovery');await WebEngine.put('qa-startup-recovery','kept');return {ready:typeof state!=='undefined'&&!!state,secure:isSecureContext,crypto:!!crypto.subtle,version:typeof aboutPage==='function'&&aboutPage().includes('1.7.0'),preserved:prior==='kept',body:document.body.innerText.slice(0,180)};",arguments:[:],in:nil,in:.page){result in
+  var report:[String:Any];switch result{case .success(let value):report=value as? [String:Any] ?? [:];case .failure(let error):report=["error":error.localizedDescription]}
+  let round=self.model?.qaRound ?? 0;let recovery=ProcessInfo.processInfo.arguments.contains("--recovery-qa");report["nativeReady"]=self.model?.ready ?? false;report["recoveryComplete"] = !recovery || round>=2;report["recoveryRounds"]=round
+  let file=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("qa-status.json");if let data=try? JSONSerialization.data(withJSONObject:report){try? data.write(to:file)}
+  if recovery && round<2 && report["ready"] as? Bool==true{self.model?.qaRound=round+1;if round==0{self.webViewWebContentProcessDidTerminate(webView)}else{self.model?.fail("測試載入失敗提示與重試");DispatchQueue.main.asyncAfter(deadline:.now()+1){self.model?.start()}}}
+ }
+ }
  #endif
  }
 }

@@ -21,7 +21,7 @@ targets:
       properties:
         CFBundleDisplayName: 沐水
         CFBundleShortVersionString: 1.7.0
-        CFBundleVersion: '11'
+        CFBundleVersion: '12'
         UILaunchScreen: {}
         NSMicrophoneUsageDescription: 用於你啟動的語音訊息與通話。
         NSCameraUsageDescription: 用於你選擇的系統拍照與視訊通話。

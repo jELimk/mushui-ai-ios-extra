@@ -44,13 +44,17 @@ jobs:
           xcrun simctl install "$DEVICE" build/sim/Build/Products/Release-iphonesimulator/Mushui170.app
           BUNDLE=app.mushui.personal
           if [ "$EDITION" = ai ]; then BUNDLE=app.mushui.ai.personal; fi
-          xcrun simctl launch "$DEVICE" "$BUNDLE"
-          sleep 18
+          xcrun simctl launch "$DEVICE" "$BUNDLE" --recovery-qa
+          DATA_DIR=$(xcrun simctl get_app_container "$DEVICE" "$BUNDLE" data)
+          for attempt in $(seq 1 20); do
+            if python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d.get("recoveryComplete") and d.get("nativeReady")' "$DATA_DIR/Documents/qa-status.json" 2>/dev/null; then break; fi
+            sleep 3
+          done
           xcrun simctl io "$DEVICE" screenshot output/iPhone.png
           DATA_DIR=$(xcrun simctl get_app_container "$DEVICE" "$BUNDLE" data)
           cp "$DATA_DIR/Documents/qa-status.json" output/qa-status.json
           cat output/qa-status.json
-          python3 -c 'import json; d=json.load(open("output/qa-status.json")); assert all(d[k] for k in ["ready","secure","crypto","version"]), d'
+          python3 -c 'import json; d=json.load(open("output/qa-status.json")); assert all(d[k] for k in ["ready","secure","crypto","version","nativeReady","recoveryComplete","preserved"]), d'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
