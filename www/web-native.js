@@ -21,7 +21,6 @@ W.dispatch=async(op,d)=>{
  
  if(op==='voiceConfig'){W.url(d.url);if(!/^[A-Za-z0-9._-]{1,120}$/.test(d.model))throw Error('語音模型名稱無效');if(d.key!==undefined)await W.key('voice',d.key);await W.edit(s=>{s.settings.voiceBaseUrl=d.url;s.settings.voiceModel=d.model;});return {state:await W.view()};}
  if(op==='voiceNote'){await W.edit(s=>W.append(W.find(s.chats,d.id),'me','［通話語音轉寫］'+W.clean(d.text,10000)));return {};}
- if(op==='voiceTranscribe'){const s=await W.read(),key=await W.key('voice')||(new URL(s.settings.voiceBaseUrl||'https://api.openai.com/v1').origin===new URL(s.settings.baseUrl).origin?await W.key('chat'):'');if(!key)throw Error('請先設定語音辨識 API 金鑰');const r=await fetch('/v1/proxy',{method:'POST',headers:{'Content-Type':'application/json','X-Mushui-Web-Session':await W.session()},body:JSON.stringify({url:W.url(s.settings.voiceBaseUrl||'https://api.openai.com/v1')+'/audio/transcriptions',headers:{Authorization:'Bearer '+key},transcription:true,audio:d.audio,model:s.settings.voiceModel||'whisper-1'})}),data=await r.json();if(!r.ok||!data.text?.trim())throw Error(('語音辨識失敗：'+(data.error?.message||data.error||'沒有文字')).replaceAll(key,'[金鑰]'));return {text:data.text.trim()};}
  if(op==='pick')return W.pick(d.kind);
  if(op==='notifications')return W.notifications();
  if(op==='load')return W.view();

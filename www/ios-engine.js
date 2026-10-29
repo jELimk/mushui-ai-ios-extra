@@ -1,6 +1,7 @@
 'use strict';
 if(window.WebEngine){
  const W=WebEngine,native=(method,args={})=>{if(!window.Capacitor?.nativePromise)throw Error('請從已安裝的 iPhone App 開啟');return Capacitor.nativePromise('MushuiLocal',method,args);};
+ W.companionContext=(st,running)=>'\n你在沐水 AI 專用版運行；App 有自主排程，不需等待使用者新訊息，也不因使用者離開聊天室或睡覺而拒絕主動聯繫。主動訊息='+(st.autoMessages?'ON':'OFF')+'，持續陪伴='+(running?'運行中':'未運行')+'。iOS 可能暫停背景 App；鎖屏或關閉時不能保證繼續排程，不可假稱永遠在線。設定 OFF 或未運行時也不可假稱已啟動，只在被問到時說明開關與平台限制。';
  W.id=()=>{const b=crypto.getRandomValues(new Uint8Array(16));return Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');};
  if(!crypto.randomUUID)crypto.randomUUID=W.id;
  W.get=async key=>(await native('get',{key})).value??undefined;

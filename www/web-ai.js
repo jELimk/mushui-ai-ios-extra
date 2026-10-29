@@ -2,13 +2,6 @@
 if(window.WebEngine){
 const W=window.WebEngine;
 W.json=text=>JSON.parse(String(text).trim().replace(/^```(?:json)?\s*|\s*```$/g,''));
-W.session=async()=>{if(!W.webSession||Date.now()>W.webSessionAt+3600000){const r=await fetch('/v1/web/session',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}),d=await r.json();if(!r.ok)throw Error(d.error||'伺服器連線失敗');W.webSession=d.token;W.webSessionAt=Date.now();}return W.webSession;};
-W.proxy=async(st,path,body,image=false,method='POST')=>{
- const secret=await W.key(image&&st.useImageKey?'image':'chat');if(!secret)throw Error('請先設定並儲存 API 金鑰');
- const headers=st.geminiNative?{'x-goog-api-key':secret}:st.provider==='Claude'?{'x-api-key':secret,'anthropic-version':'2023-06-01'}:{Authorization:'Bearer '+secret};
- const r=await fetch('/v1/proxy',{method:'POST',headers:{'Content-Type':'application/json','X-Mushui-Web-Session':await W.session()},body:JSON.stringify({url:W.url(st.baseUrl)+path,headers,method,body})});
- const data=await r.json();if(!r.ok){const e=Error(('API HTTP '+r.status+'：'+(data.error?.message||data.error||'請檢查連線、金鑰與模型')).replaceAll(secret,'[金鑰]'));e.status=r.status;throw e;}return data;
-};
 W.vision=st=>st.visionMode==='on'||st.visionMode!=='off'&&!/^(gpt-3\.5|deepseek-reasoner|deepseek-r1|o3-mini)|text-only/i.test(st.model);
 W.companionContext=(st,running)=>'\n沐水目前的真實能力與狀態（優先於舊聊天或摘要對功能的錯誤推測）：App 有自主排程，使用者離開聊天室、沒有回覆或睡覺，不是不能主動私訊的理由。你在排程 API 請求中依個性決定行動，不是在請求外自行運行。主動訊息設定='+(st.autoMessages?'ON':'OFF')+'；持續陪伴服務='+(running?'運行中':'未運行')+'；自動朋友圈='+(st.autoMoments?'ON':'OFF')+'。不要套用一般聊天網站只能等待使用者的限制。這個網頁／iPhone 網頁引擎的 AI 排程在頁面可執行時運作，切到其他 App、鎖屏或關閉時可能被系統暫停，不能保證背景 AI 排程；真人 Web Push 與原生已接通通話不代表 AI 排程已完成背景服務。OFF 或服務未運行時不可假稱已啟動，可說明設定→AI 的日常→開啟 AI 主動傳訊息並開始持續陪伴。網路、API 與系統停止可能中斷，不保證永遠在線或準時送達。先依個性回應情感，只在使用者詢問能力或排程時才解釋狀態，不要每句重複設定說明。';
 W.complete=async(st,system,messages)=>{
