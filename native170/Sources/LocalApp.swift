@@ -7,6 +7,11 @@ import CoreLocation
 import UserNotifications
 import WebRTC
 
+func startupTrace(_ event:String){
+ #if targetEnvironment(simulator)
+ let url=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("startup-trace.json");var values=(try? Data(contentsOf:url)).flatMap{try? JSONSerialization.jsonObject(with:$0)} as? [String] ?? [];values.append(event);if let data=try? JSONSerialization.data(withJSONObject:values){try? data.write(to:url)}
+ #endif
+}
 final class LocalServer {
  let listener:NWListener;let queue=DispatchQueue(label:"mushui.local.http");let root:URL
  init(ready:@escaping(URL)->Void,failed:@escaping(String)->Void)throws{guard let bundled=Bundle.main.url(forResource:"www",withExtension:nil) else{throw NSError(domain:"MushuiStartup",code:1,userInfo:[NSLocalizedDescriptionKey:"安裝包缺少介面檔案"])};root=bundled;let p=NWParameters.tcp;p.requiredLocalEndpoint = .hostPort(host:"127.0.0.1",port:.any);listener=try NWListener(using:p);listener.stateUpdateHandler={ [weak self] state in if case .ready=state,let port=self?.listener.port{ready(URL(string:"http://127.0.0.1:\(port.rawValue)/index.html")!)};if case .failed(let error)=state{failed(error.localizedDescription)} };listener.newConnectionHandler={ [weak self] c in guard let self else{c.cancel();return};c.start(queue:self.queue);self.read(c,Data()) };listener.start(queue:queue)}
@@ -24,12 +29,12 @@ final class NoRedirect:NSObject,URLSessionTaskDelegate{func urlSession(_ session
  private var attempts=0
  var qaRound=0
  init(){start()}
- func start(){ready=false;error="";url=nil;generation+=1;server?.listener.cancel();server=nil
-  let current=generation;DispatchQueue.main.asyncAfter(deadline:.now()+15){[weak self] in guard let self,self.generation==current,self.url==nil,self.error.isEmpty else{return};self.fail("本機畫面服務未就緒，請重新載入。")};do{server=try LocalServer(ready:{[weak self] url in Task{@MainActor in self?.url=url}},failed:{[weak self] error in Task{@MainActor in self?.fail("本機介面服務無法啟動："+error)}})}catch{fail(error.localizedDescription)}
+ func start(){startupTrace("start");ready=false;error="";url=nil;generation+=1;server?.listener.cancel();server=nil
+  let current=generation;DispatchQueue.main.asyncAfter(deadline:.now()+15){[weak self] in guard let self,self.generation==current,self.url==nil,self.error.isEmpty else{return};self.fail("本機畫面服務未就緒，請重新載入。")};do{server=try LocalServer(ready:{[weak self] url in Task{@MainActor in startupTrace("listener-ready");self?.url=url}},failed:{[weak self] error in Task{@MainActor in self?.fail("本機介面服務無法啟動："+error)}})}catch{fail(error.localizedDescription)}
  }
- func fail(_ message:String){ready=false;error=message}
- func loaded(){ready=true;error="";attempts=0}
- func recover(_ reason:String){guard attempts<2 else{fail(reason+"。請按重新載入，資料不會刪除。");return};attempts+=1;start()}
+ func fail(_ message:String){startupTrace("failure:"+message);ready=false;error=message}
+ func loaded(){startupTrace("loaded");ready=true;error="";attempts=0}
+ func recover(_ reason:String){startupTrace("recover:"+reason);guard attempts<2 else{fail(reason+"。請按重新載入，資料不會刪除。");return};attempts+=1;start()}
  func foreground(){guard ready && error.isEmpty else{return};host?.checkReady(resuming:true)}
  func exportBackup(){let host=self.host ?? Host(url:URL(string:"http://127.0.0.1/")!,model:self);do{let data=try Data(contentsOf:host.path("state"));let wrapped=try JSONSerialization.jsonObject(with:data) as? [String:Any];guard let state=wrapped?["value"] else{throw host.failure("目前沒有可匯出的本機資料")};let url=FileManager.default.temporaryDirectory.appendingPathComponent("沐水-啟動救援備份.json");try JSONSerialization.data(withJSONObject:state,options:.prettyPrinted).write(to:url);let vc=UIActivityViewController(activityItems:[url],applicationActivities:nil);if let view=host.parent()?.view,let pop=vc.popoverPresentationController{pop.sourceView=view;pop.sourceRect=CGRect(x:view.bounds.midX,y:view.bounds.midY,width:1,height:1)};let presenter=host.parent() ?? UIApplication.shared.connectedScenes.compactMap{$0 as? UIWindowScene}.flatMap{$0.windows}.first(where:{$0.isKeyWindow})?.rootViewController;presenter?.present(vc,animated:true)}catch{self.error=error.localizedDescription}}
 }
@@ -46,7 +51,7 @@ final class NoRedirect:NSObject,URLSessionTaskDelegate{func urlSession(_ session
 @MainActor struct LocalWeb:UIViewRepresentable {
  let url:URL;let model:AppModel
  func makeCoordinator()->Host{Host(url:url,model:model)}
- func makeUIView(context:Context)->WKWebView{let cfg=WKWebViewConfiguration();cfg.allowsInlineMediaPlayback=true;cfg.mediaTypesRequiringUserActionForPlayback=[];cfg.defaultWebpagePreferences.allowsContentJavaScript=true;cfg.userContentController.add(context.coordinator,name:"mushuiHost");cfg.userContentController.add(context.coordinator,name:"mushuiCall");let v=WKWebView(frame:.zero,configuration:cfg);v.isOpaque=false;v.backgroundColor=UIColor(red:0.98,green:0.96,blue:0.99,alpha:1);v.scrollView.backgroundColor=v.backgroundColor;context.coordinator.web=v;model.host=context.coordinator;v.navigationDelegate=context.coordinator;v.uiDelegate=context.coordinator;v.scrollView.isScrollEnabled=false;v.scrollView.contentInsetAdjustmentBehavior = .never;v.load(URLRequest(url:url));context.coordinator.armWatchdog();return v}
+ func makeUIView(context:Context)->WKWebView{startupTrace("make-web");let cfg=WKWebViewConfiguration();cfg.allowsInlineMediaPlayback=true;cfg.mediaTypesRequiringUserActionForPlayback=[];cfg.defaultWebpagePreferences.allowsContentJavaScript=true;cfg.userContentController.add(context.coordinator,name:"mushuiHost");cfg.userContentController.add(context.coordinator,name:"mushuiCall");let v=WKWebView(frame:.zero,configuration:cfg);v.isOpaque=false;v.backgroundColor=UIColor(red:0.98,green:0.96,blue:0.99,alpha:1);v.scrollView.backgroundColor=v.backgroundColor;context.coordinator.web=v;model.host=context.coordinator;v.navigationDelegate=context.coordinator;v.uiDelegate=context.coordinator;v.scrollView.isScrollEnabled=false;v.scrollView.contentInsetAdjustmentBehavior = .never;v.load(URLRequest(url:url));context.coordinator.armWatchdog();return v}
  func updateUIView(_ view:WKWebView,context:Context){}
  static func dismantleUIView(_ view:WKWebView,coordinator:Host){coordinator.watchdog?.cancel();view.stopLoading();view.configuration.userContentController.removeScriptMessageHandler(forName:"mushuiHost");view.configuration.userContentController.removeScriptMessageHandler(forName:"mushuiCall")}
 }
@@ -89,7 +94,7 @@ final class NoRedirect:NSObject,URLSessionTaskDelegate{func urlSession(_ session
  func locationManager(_ manager:CLLocationManager,didFailWithError error:Error){if let id=locationCall{reply(id,["granted":false]);locationCall=nil}}
  func webView(_ webView:WKWebView,decidePolicyFor action:WKNavigationAction,decisionHandler:@escaping(WKNavigationActionPolicy)->Void){if let u=action.request.url,u.host==origin.host,u.port==origin.port{decisionHandler(.allow)}else{if action.navigationType == .linkActivated,let u=action.request.url,["https","http"].contains(u.scheme ?? ""){UIApplication.shared.open(u)};decisionHandler(.cancel)}}
  func webView(_ webView:WKWebView,requestMediaCapturePermissionFor origin:WKSecurityOrigin,initiatedByFrame frame:WKFrameInfo,type:WKMediaCaptureType,decisionHandler:@escaping(WKPermissionDecision)->Void){decisionHandler(origin.host==self.origin.host && origin.port==self.origin.port ? .prompt:.deny)}
- func webView(_ webView:WKWebView,didFinish navigation:WKNavigation!){
+ func webView(_ webView:WKWebView,didFinish navigation:WKNavigation!){startupTrace("navigation-finished");
  DispatchQueue.main.asyncAfter(deadline:.now()+1){[weak self] in self?.checkReady()}
  #if targetEnvironment(simulator)
  DispatchQueue.main.asyncAfter(deadline:.now()+8){[weak self] in guard let self,self.model?.generation==self.generation else{return};
