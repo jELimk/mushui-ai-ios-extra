@@ -66,4 +66,26 @@ final class NoRedirect:NSObject,URLSessionTaskDelegate{func urlSession(_ session
  }
 }
 @MainActor struct NativeVideo:UIViewRepresentable{let track:RTCVideoTrack;class Coordinator{var track:RTCVideoTrack?};func makeCoordinator()->Coordinator{Coordinator()};func makeUIView(context:Context)->RTCMTLVideoView{let view=RTCMTLVideoView(frame:.zero);view.videoContentMode = .scaleAspectFit;context.coordinator.track=track;track.add(view);return view};func updateUIView(_ view:RTCMTLVideoView,context:Context){if context.coordinator.track !== track{context.coordinator.track?.remove(view);context.coordinator.track=track;track.add(view)}};static func dismantleUIView(_ view:RTCMTLVideoView,coordinator:Coordinator){coordinator.track?.remove(view)}}
-@MainActor struct NativeCallPanel:View{@ObservedObject var calls:NativeCalls;@State var small=false;@State var full=false;var video:RTCVideoTrack?{calls.screenShowing ? calls.remoteScreen:calls.cameraShowing ? calls.remoteCamera:nil};var body:some View{if calls.visible{VStack(spacing:12){Text(calls.peer).font(.headline);Text(calls.message).font(.caption);if let video{NativeVideo(track:video).frame(minHeight:small ? 100:220,maxHeight:small ? 140:450);HStack{Button("全螢幕"){full=true};Button(small ? "還原":"小窗觀看"){small.toggle()}}};if calls.incoming{Button("接聽"){calls.acceptFromUI()}};HStack{Button(calls.muted ? "取消靜音":"靜音"){calls.toggleMute()};Button(calls.cameraEnabled ? "關閉鏡頭":"視訊"){calls.toggleCamera()};Button("掛斷",role:.destructive){calls.endFromUI()}}}.padding(18).frame(width:small ? 300:nil).background(Color(red:0.97,green:0.94,blue:0.99),in:RoundedRectangle(cornerRadius:24)).padding().frame(maxWidth:.infinity,maxHeight:.infinity,alignment:small ? .bottomTrailing:.center).fullScreenCover(isPresented:$full){ZStack{Color.black.ignoresSafeArea();if let video{NativeVideo(track:video).ignoresSafeArea()};VStack{HStack{Spacer();Button("退出全螢幕"){full=false}.padding()};Spacer()}}}}}}
+@MainActor struct NativeCallPanel:View {
+ @ObservedObject var calls:NativeCalls
+ @State private var small=false
+ @State private var full=false
+ @State private var source="camera"
+ @State private var offset=CGSize.zero
+ var video:RTCVideoTrack? { if source=="screen",calls.screenShowing,let track=calls.remoteScreen{return track};if calls.cameraShowing,let track=calls.remoteCamera{return track};return calls.screenShowing ? calls.remoteScreen:nil }
+ var body:some View {
+  if calls.visible {
+   VStack(spacing:12) {
+    Text(calls.peer).font(.headline)
+    Text(calls.message).font(.caption)
+    if calls.screenShowing && calls.cameraShowing { Picker("觀看畫面",selection:$source){Text("視訊").tag("camera");Text("螢幕直播").tag("screen")}.pickerStyle(.segmented) }
+    if let video { NativeVideo(track:video).frame(minHeight:small ? 100:220,maxHeight:small ? 140:450)
+     HStack{Button("全螢幕"){full=true};Button(small ? "還原":"小窗觀看"){small.toggle();offset = .zero}}
+    }
+    if calls.incoming { Button("接聽"){calls.acceptFromUI()} }
+    HStack{Button(calls.muted ? "取消靜音":"靜音"){calls.toggleMute()};Button(calls.cameraEnabled ? "關閉鏡頭":"視訊"){calls.toggleCamera()};Button("掛斷",role:.destructive){calls.endFromUI()}}
+   }.padding(18).frame(width:small ? 300:nil).background(Color(red:0.97,green:0.94,blue:0.99),in:RoundedRectangle(cornerRadius:24)).padding().offset(offset).gesture(DragGesture().onChanged{if small{offset=$0.translation}}).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:small ? .bottomTrailing:.center)
+    .fullScreenCover(isPresented:$full){ZStack{Color.black.ignoresSafeArea();if let video{NativeVideo(track:video).ignoresSafeArea()};VStack{HStack{Spacer();Button("退出全螢幕"){full=false}.padding()};Spacer()}}.onChange(of:calls.visible){visible in if !visible{full=false}}}
+  }
+ }
+}

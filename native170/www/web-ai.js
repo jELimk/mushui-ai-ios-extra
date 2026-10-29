@@ -109,15 +109,16 @@ W.life=async start=>{
  const a=s.ais[turn++%s.ais.length],c=s.chats.find(c=>c.members.length===1&&c.members[0]===a.id)||{messages:[]};
  if(c.id&&W.active.has(c.id))continue;
  const feed=s.moments.filter(p=>W.visible(p,a.id)).slice(-20).map(p=>({id:p.id,author:W.person(s,p.author),text:p.text,comments:p.comments.slice(-20)}));
- const decision=W.json(await W.complete(st,W.system(a)+'\n'+W.imageStyle(a),[...W.textOnly(W.context(s,a,c)),{role:'user',content:'自主生活判斷，不需等使用者回覆，睡覺仍可依個性分享，不設安靜時段，不要固定台詞。允許：'+JSON.stringify({message:st.autoMessages,moment:st.autoMoments,react:st.autoReactions,call:st.autoCalls,image:st.autoImages})+'。只回 JSON {kind:none/message/moment/react/call/image,text:內容,postId:回應貼文,comment:留言,like:true,visibleTo:可選的可見ID陣列,image:{kind:photo/avatar/cover/inviteAvatar/inviteCover,scene:場景}}。角色ID：'+JSON.stringify(s.ais.map(a=>({id:a.id,name:a.name})))+'，me 是使用者。可見貼文：'+JSON.stringify(feed)}]));
+ const decision=W.json(await W.complete(st,W.system(a)+'\n'+W.imageStyle(a),[...W.textOnly(W.context(s,a,c)),{role:'user',content:'自主生活判斷，不需等使用者回覆，睡覺仍可依個性分享，不設安靜時段，不要固定台詞。允許：'+JSON.stringify({message:st.autoMessages,moment:st.autoMoments,react:st.autoReactions,call:st.autoCalls,image:st.autoImages})+'。只回 JSON {kind:none/message/moment/react/call/image,text:內容,postId:回應貼文,comment:留言,like:true,visibleTo:可選的可見ID陣列,voice:是否適合語音布林值,image:{kind:photo/avatar/cover/inviteAvatar/inviteCover,scene:場景}}。角色ID：'+JSON.stringify(s.ais.map(a=>({id:a.id,name:a.name})))+'，me 是使用者。可見貼文：'+JSON.stringify(feed)}]));
  if(!W.running||W.epoch!==epoch)break;
+ let proactiveVoice;
  if(decision.kind==='image'&&st.autoImages){let id;await W.edit(s=>{id=W.dm(s,a.id).id;});await W.generate(id,a.id,decision.image||null);}
  else await W.edit(s=>{if(!s.ais.some(v=>v.id===a.id))return;const st=s.settings,text=W.clean(decision.text,5000);
- if(decision.kind==='message'&&st.autoMessages&&text){const c=W.dm(s,a.id);if(!W.active.has(c.id)){const m=W.append(c,a.id,text);W.attachInvite?.(s,c,m,decision.relationshipInvite);c.unread=(c.unread||0)+1;}}
+ if(decision.kind==='message'&&st.autoMessages&&text){const c=W.dm(s,a.id);if(!W.active.has(c.id)){const m=W.append(c,a.id,text,{voiceRequested:!!decision.voice});if(a.voiceProfile?.enabled&&m.voiceRequested)proactiveVoice={chatId:c.id,messageId:m.id,aiId:a.id,text};W.attachInvite?.(s,c,m,decision.relationshipInvite);c.unread=(c.unread||0)+1;}}
  else if(decision.kind==='moment'&&st.autoMoments&&text){const visibleTo=decision.visibleTo;if(visibleTo&&!Array.isArray(visibleTo))return;if(visibleTo&&visibleTo.some(id=>id!=='me'&&!s.ais.some(a=>a.id===id)))return;s.moments.push({id:W.id(),author:a.id,text,images:[],time:Date.now(),likes:[],comments:[],...(visibleTo?{visibleTo:[...new Set(visibleTo)]}:{})});}
  else if(decision.kind==='call'&&st.autoCalls&&!s.activeCall)W.callBegin(s,a.id,true);
  else if(decision.kind==='react'&&st.autoReactions){const p=s.moments.find(p=>p.id===decision.postId);if(p&&W.visible(p,a.id)&&!['queued','running'].includes(p.replyState)){if(decision.comment)p.comments.push({author:a.id,text:W.clean(decision.comment,1000),time:Date.now()});if(decision.like&&!p.likes.includes(a.id))p.likes.push(a.id);}}
- s.activity.lastSuccess=Date.now();s.activity.lastError='';});failures=0;await new Promise(r=>setTimeout(r,250));
+ s.activity.lastSuccess=Date.now();s.activity.lastError='';});if(proactiveVoice&&W.speakMessage)await W.speakMessage(proactiveVoice);failures=0;await new Promise(r=>setTimeout(r,250));
  }catch(e){failures++;await W.edit(s=>{s.activity.lastError=e.message;});await new Promise(r=>setTimeout(r,Math.min(300000,5000*2**Math.min(failures-1,6))));}
  }if(epoch===W.epoch)W.running=false;})().catch(()=>{W.running=false;});
  return {requested:true};
