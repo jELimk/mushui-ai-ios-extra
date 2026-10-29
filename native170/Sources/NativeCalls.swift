@@ -32,7 +32,7 @@ import WebRTC
     private let factory: RTCPeerConnectionFactory
     override init() {
         let config = CXProviderConfiguration(localizedName: "沐水")
-        config.supportsVideo = false
+        config.supportsVideo = true
         config.maximumCallsPerCallGroup = 1
         config.supportedHandleTypes = [.generic]
         provider = CXProvider(configuration: config)
@@ -194,5 +194,5 @@ import WebRTC
     }
 
     func peerConnection(_ connection:RTCPeerConnection,didAdd receiver:RTCRtpReceiver,streams:[RTCMediaStream]){guard let video=receiver.track as? RTCVideoTrack else{return};let mid=connection.transceivers.first(where:{$0.receiver === receiver})?.mid;Task{@MainActor in if mid=="2"{self.remoteScreen=video}else{self.remoteCamera=video}}}
-    func toggleCamera(){Task{@MainActor in guard let pc=self.pc else{return};if cameraEnabled{capturer?.stopCapture();pc.transceivers.first(where:{$0.mid=="1"})?.sender.track=nil;cameraEnabled=false}else{guard await AVCaptureDevice.requestAccess(for:.video)else{message="需要相機權限";return};let source=factory.videoSource(),capture=RTCCameraVideoCapturer(delegate:source);guard let device=RTCCameraVideoCapturer.captureDevices().first(where:{$0.position == .front}) ?? RTCCameraVideoCapturer.captureDevices().first,let format=RTCCameraVideoCapturer.supportedFormats(for:device).first else{return};let track=factory.videoTrack(with:source,trackId:"mushui-camera");localVideo=track;capturer=capture;pc.transceivers.first(where:{$0.mid=="1"})?.sender.track=track;capture.startCapture(with:device,format:format,fps:min(30,Int(format.videoSupportedFrameRateRanges.first?.maxFrameRate ?? 30)));cameraEnabled=true};_ = try? await request("media",["id":callID,"media":["camera":cameraEnabled,"screen":false,"muted":muted]])}}
+    func toggleCamera(){Task{@MainActor in guard let pc=self.pc else{return};if cameraEnabled{await capturer?.stopCapture();pc.transceivers.first(where:{$0.mid=="1"})?.sender.track=nil;cameraEnabled=false}else{guard await AVCaptureDevice.requestAccess(for:.video)else{message="需要相機權限";return};let source=factory.videoSource(),capture=RTCCameraVideoCapturer(delegate:source);guard let device=RTCCameraVideoCapturer.captureDevices().first(where:{$0.position == .front}) ?? RTCCameraVideoCapturer.captureDevices().first,let format=RTCCameraVideoCapturer.supportedFormats(for:device).first else{return};let track=factory.videoTrack(with:source,trackId:"mushui-camera");localVideo=track;capturer=capture;pc.transceivers.first(where:{$0.mid=="1"})?.sender.track=track;do{try await capture.startCapture(with:device,format:format,fps:min(30,Int(format.videoSupportedFrameRateRanges.first?.maxFrameRate ?? 30)));cameraEnabled=true}catch{message=error.localizedDescription;return}};_ = try? await request("media",["id":callID,"media":["camera":cameraEnabled,"screen":false,"muted":muted]])}}
 }
