@@ -25,13 +25,13 @@ final class NoRedirect:NSObject,URLSessionTaskDelegate{func urlSession(_ session
  var qaRound=0
  init(){start()}
  func start(){ready=false;error="";url=nil;generation+=1;server?.listener.cancel();server=nil
-  do{server=try LocalServer(ready:{[weak self] url in Task{@MainActor in self?.url=url}},failed:{[weak self] error in Task{@MainActor in self?.fail("本機介面服務無法啟動："+error)}})}catch{fail(error.localizedDescription)}
+  let current=generation;DispatchQueue.main.asyncAfter(deadline:.now()+15){[weak self] in guard let self,self.generation==current,self.url==nil,self.error.isEmpty else{return};self.fail("本機畫面服務未就緒，請重新載入。")};do{server=try LocalServer(ready:{[weak self] url in Task{@MainActor in self?.url=url}},failed:{[weak self] error in Task{@MainActor in self?.fail("本機介面服務無法啟動："+error)}})}catch{fail(error.localizedDescription)}
  }
  func fail(_ message:String){ready=false;error=message}
  func loaded(){ready=true;error="";attempts=0}
  func recover(_ reason:String){guard attempts<2 else{fail(reason+"。請按重新載入，資料不會刪除。");return};attempts+=1;start()}
  func foreground(){guard ready && error.isEmpty else{return};host?.checkReady(resuming:true)}
- func exportBackup(){guard let host else{return};do{let data=try Data(contentsOf:host.path("state"));let wrapped=try JSONSerialization.jsonObject(with:data) as? [String:Any];guard let state=wrapped?["value"] else{throw host.failure("目前沒有可匯出的本機資料")};let url=FileManager.default.temporaryDirectory.appendingPathComponent("沐水-啟動救援備份.json");try JSONSerialization.data(withJSONObject:state,options:.prettyPrinted).write(to:url);let vc=UIActivityViewController(activityItems:[url],applicationActivities:nil);if let view=host.parent()?.view,let pop=vc.popoverPresentationController{pop.sourceView=view;pop.sourceRect=CGRect(x:view.bounds.midX,y:view.bounds.midY,width:1,height:1)};host.parent()?.present(vc,animated:true)}catch{self.error=error.localizedDescription}}
+ func exportBackup(){let host=self.host ?? Host(url:URL(string:"http://127.0.0.1/")!,model:self);do{let data=try Data(contentsOf:host.path("state"));let wrapped=try JSONSerialization.jsonObject(with:data) as? [String:Any];guard let state=wrapped?["value"] else{throw host.failure("目前沒有可匯出的本機資料")};let url=FileManager.default.temporaryDirectory.appendingPathComponent("沐水-啟動救援備份.json");try JSONSerialization.data(withJSONObject:state,options:.prettyPrinted).write(to:url);let vc=UIActivityViewController(activityItems:[url],applicationActivities:nil);if let view=host.parent()?.view,let pop=vc.popoverPresentationController{pop.sourceView=view;pop.sourceRect=CGRect(x:view.bounds.midX,y:view.bounds.midY,width:1,height:1)};let presenter=host.parent() ?? UIApplication.shared.connectedScenes.compactMap{$0 as? UIWindowScene}.flatMap{$0.windows}.first(where:{$0.isKeyWindow})?.rootViewController;presenter?.present(vc,animated:true)}catch{self.error=error.localizedDescription}}
 }
 @main @MainActor struct Mushui170App:App {
  @StateObject var model=AppModel()
@@ -39,7 +39,7 @@ final class NoRedirect:NSObject,URLSessionTaskDelegate{func urlSession(_ session
  var body:some Scene{WindowGroup{ZStack{
   Color(red:0.98,green:0.96,blue:0.99).ignoresSafeArea()
   if let url=model.url{LocalWeb(url:url,model:model).id(model.generation).ignoresSafeArea()}
-  if !model.ready{VStack(spacing:20){Text("沐水").font(.largeTitle).foregroundStyle(Color.purple);if model.error.isEmpty{ProgressView();Text("正在開啟你的日常…")}else{Text("暫時無法顯示畫面").font(.headline);Text(model.error).font(.caption).multilineTextAlignment(.center);Button("重新載入"){model.start()}.buttonStyle(.borderedProminent);Button("匯出本機備份"){model.exportBackup()}}.padding(30).frame(maxWidth:.infinity,maxHeight:.infinity).background(Color(red:0.98,green:0.96,blue:0.99))}
+  if !model.ready{VStack(spacing:20){Text("沐水").font(.largeTitle).foregroundStyle(Color.purple);if model.error.isEmpty{ProgressView();Text("正在開啟你的日常…")}else{Text("暫時無法顯示畫面").font(.headline);Text(model.error).font(.caption).multilineTextAlignment(.center);Button("重新載入"){model.start()}.buttonStyle(.borderedProminent);Button("匯出本機備份"){model.exportBackup()}}}.padding(30).frame(maxWidth:.infinity,maxHeight:.infinity).background(Color(red:0.98,green:0.96,blue:0.99))}
   NativeCallPanel(calls:model.calls)
  }.onChange(of:phase){value in if value == .active{model.foreground()}}}}
 }
@@ -56,7 +56,7 @@ final class NoRedirect:NSObject,URLSessionTaskDelegate{func urlSession(_ session
  func armWatchdog(){watchdog?.cancel();let work=DispatchWorkItem{[weak self] in self?.checkReady()};watchdog=work;DispatchQueue.main.asyncAfter(deadline:.now()+15,execute:work)}
  func checkReady(resuming:Bool=false){guard model?.generation==generation,let web else{return};web.evaluateJavaScript("typeof state!=='undefined'&&!!state&&!!document.querySelector('#app .page,#app .conversation,#app .desktop-shell')"){[weak self] value,error in guard let self,self.model?.generation==self.generation else{return};if value as? Bool==true{self.watchdog?.cancel();self.model?.loaded()}else if resuming{self.model?.recover("從背景恢復時介面已被系統回收")}else{self.model?.fail("介面未完成啟動。"+(error.map{" "+$0.localizedDescription} ?? "可重新載入或匯出本機備份。"))}}}
  func webViewWebContentProcessDidTerminate(_ webView:WKWebView){guard model?.generation==generation else{return};watchdog?.cancel();model?.recover("介面程序已被系統回收")}
- func webView(_ webView:WKWebView,didFailProvisionalNavigation navigation:WKNavigation!,withError error:Error){if (error as NSError).code != NSURLErrorCancelled{watchdog?.cancel();model?.fail("載入失敗（\((error as NSError).code)）："+error.localizedDescription)}}
+ func webView(_ webView:WKWebView,didFailProvisionalNavigation navigation:WKNavigation!,withError error:Error){guard model?.generation==generation else{return};if (error as NSError).code != NSURLErrorCancelled{watchdog?.cancel();model?.fail("載入失敗（\((error as NSError).code)）："+error.localizedDescription)}}
  func webView(_ webView:WKWebView,didFail navigation:WKNavigation!,withError error:Error){self.webView(webView,didFailProvisionalNavigation:navigation,withError:error)}
 
  func path(_ key:String)throws->URL{let folder=try FileManager.default.url(for:.applicationSupportDirectory,in:.userDomainMask,appropriateFor:nil,create:true).appendingPathComponent(Bundle.main.bundleIdentifier=="app.mushui.ai.personal" ? "MushuiAI":"Mushui",isDirectory:true);try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true);let safe=key.data(using:.utf8)!.base64EncodedString().replacingOccurrences(of:"/",with:"_").replacingOccurrences(of:"+",with:"-");return folder.appendingPathComponent((key=="state" ? "state":String(safe.prefix(180)))+".json")}
