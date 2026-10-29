@@ -27,21 +27,19 @@ import WebRTC
     private var pc: RTCPeerConnection?
     private var track: RTCAudioTrack?
     private var timer: Timer?
-    private let controller = CXCallController()
-    private let provider: CXProvider
-    private let factory: RTCPeerConnectionFactory
-    override init() {
-        let config = CXProviderConfiguration(localizedName: "沐水")
-        config.supportsVideo = true
-        config.maximumCallsPerCallGroup = 1
-        config.supportedHandleTypes = [.generic]
-        provider = CXProvider(configuration: config)
-        RTCInitializeSSL()
-        factory = RTCPeerConnectionFactory(encoderFactory: RTCDefaultVideoEncoderFactory(), decoderFactory: RTCDefaultVideoDecoderFactory())
+    private lazy var controller = CXCallController()
+    private lazy var provider:CXProvider = {
+        let config=CXProviderConfiguration(localizedName:"沐水")
+        config.supportsVideo=true;config.maximumCallsPerCallGroup=1;config.supportedHandleTypes=[.generic]
+        let provider=CXProvider(configuration:config);provider.setDelegate(self,queue:.main);return provider
+    }()
+    private lazy var factory:RTCPeerConnectionFactory = {
+        RTCInitializeSSL();RTCAudioSession.sharedInstance().useManualAudio=true
+        return RTCPeerConnectionFactory(encoderFactory:RTCDefaultVideoEncoderFactory(),decoderFactory:RTCDefaultVideoDecoderFactory())
+    }()
+    override init(){
         super.init()
-        RTCAudioSession.sharedInstance().useManualAudio = true
-        provider.setDelegate(self, queue: .main)
-        timer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in Task { @MainActor in await self?.poll() } }
+        timer=Timer.scheduledTimer(withTimeInterval:1.5,repeats:true){[weak self] _ in Task{@MainActor in await self?.poll()}}
     }
     func receive(_ b: [String: Any]) {
         let nextBase = b["server"] as? String ?? "", nextToken = b["token"] as? String ?? ""

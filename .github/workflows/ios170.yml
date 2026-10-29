@@ -38,7 +38,7 @@ jobs:
           EDITION: ${{ matrix.edition }}
         run: |
           xcodebuild -project native170/Mushui170.xcodeproj -scheme Mushui170 -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/sim CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_LOCAL_EXECUTION_IDENTITY='Ad Hoc' build > simulator.log 2>&1 || { tail -130 simulator.log; exit 1; }
-          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(x["udid"] for a in d["devices"].values() for x in a if "iPhone" in x["name"]))')
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(x["udid"] for k in sorted(d["devices"],key=lambda k:tuple(int(v) for v in k.split("iOS-")[-1].split("-") if v.isdigit()),reverse=True) for x in d["devices"][k] if "iPhone" in x["name"]))')
           xcrun simctl boot "$DEVICE"
           xcrun simctl bootstatus "$DEVICE" -b
           xcrun simctl install "$DEVICE" build/sim/Build/Products/Release-iphonesimulator/Mushui170.app
@@ -46,7 +46,7 @@ jobs:
           if [ "$EDITION" = ai ]; then BUNDLE=app.mushui.ai.personal; fi
           xcrun simctl launch "$DEVICE" "$BUNDLE" --recovery-qa
           DATA_DIR=$(xcrun simctl get_app_container "$DEVICE" "$BUNDLE" data)
-          for attempt in $(seq 1 20); do
+          for attempt in $(seq 1 30); do
             if python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d.get("recoveryComplete") and d.get("nativeReady")' "$DATA_DIR/Documents/qa-status.json" 2>/dev/null; then break; fi
             sleep 3
           done
