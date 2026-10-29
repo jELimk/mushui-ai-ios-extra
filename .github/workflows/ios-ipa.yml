@@ -1,68 +1,64 @@
-name: Build standalone AI iPhone IPA
+name: Build Mushui 1.7.0 native IPA
 on:
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  iphone:
+  native:
     runs-on: macos-15
-    timeout-minutes: 20
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        edition: [full, ai]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 'latest-stable'
-      - run: npm ci
-      - run: npx cap sync ios
-      - name: Compile real iPhone ARM64 application
-        shell: bash
+          xcode-version: latest-stable
+      - run: brew install xcodegen
+      - name: Configure edition
+        env:
+          EDITION: ${{ matrix.edition }}
         run: |
-          set -euo pipefail
-          xcodebuild -version
-          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO IPHONEOS_DEPLOYMENT_TARGET=16.4 build > build.log 2>&1 || { tail -150 build.log; exit 1; }
-          tail -12 build.log
-      - name: Package IPA for Windows signing
-        shell: bash
+          if [ "$EDITION" = ai ]; then
+            sed -i '' 's/app.mushui.personal/app.mushui.ai.personal/g; s/CFBundleDisplayName: 沐水/CFBundleDisplayName: 沐水 AI/' native170/project.yml
+            sed -i '' 's/MushuiAIOnly=false/MushuiAIOnly=true/' native170/www/client-config.js
+          fi
+          xcodegen generate --spec native170/project.yml --project native170
+      - name: Build real ARM64 app
         run: |
-          set -euo pipefail
+          xcodebuild -project native170/Mushui170.xcodeproj -scheme Mushui170 -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO build > device.log 2>&1 || { tail -130 device.log; exit 1; }
           mkdir -p output/Payload
-          cp -R build/DerivedData/Build/Products/Release-iphoneos/App.app output/Payload/
-          file output/Payload/App.app/App
-          test -f output/Payload/App.app/public/index.html
-          test -f output/Payload/App.app/public/ios-engine.js
-          test ! -f output/Payload/App.app/public/human.js
+          cp -R build/device/Build/Products/Release-iphoneos/Mushui170.app output/Payload/
           cd output
-          zip -qry Mushui-AI-Extra-unsigned.ipa Payload
-          shasum -a 256 Mushui-AI-Extra-unsigned.ipa > SHA256SUMS.txt
-          cp ../INSTALL_WINDOWS_IOS.md .
-      - name: Launch local-only app in iPhone simulator
-        shell: bash
+          zip -qry Mushui-1.7.0-${{ matrix.edition }}-unsigned.ipa Payload
+      - name: Build and run simulator
+        env:
+          EDITION: ${{ matrix.edition }}
         run: |
-          set -euo pipefail
-          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/SimData CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_LOCAL_EXECUTION_IDENTITY="Ad Hoc" IPHONEOS_DEPLOYMENT_TARGET=16.4 build > simulator.log 2>&1 || { tail -100 simulator.log; exit 1; }
-          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next(d["udid"] for devices in data["devices"].values() for d in devices if "iPhone" in d["name"]))')
+          xcodebuild -project native170/Mushui170.xcodeproj -scheme Mushui170 -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/sim CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_LOCAL_EXECUTION_IDENTITY='Ad Hoc' build > simulator.log 2>&1 || { tail -130 simulator.log; exit 1; }
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(x["udid"] for a in d["devices"].values() for x in a if "iPhone" in x["name"]))')
           xcrun simctl boot "$DEVICE"
           xcrun simctl bootstatus "$DEVICE" -b
-          xcrun simctl install "$DEVICE" build/SimData/Build/Products/Release-iphonesimulator/App.app
-          xcrun simctl launch "$DEVICE" app.mushui.ai.extra
-          sleep 16
-          xcrun simctl io "$DEVICE" screenshot output/iPhone-Simulator.png
-          DATA_DIR=$(xcrun simctl get_app_container "$DEVICE" app.mushui.ai.extra data)
-          cp "$DATA_DIR/Library/Application Support/qa-status.json" output/qa-status.json
+          xcrun simctl install "$DEVICE" build/sim/Build/Products/Release-iphonesimulator/Mushui170.app
+          BUNDLE=app.mushui.personal
+          if [ "$EDITION" = ai ]; then BUNDLE=app.mushui.ai.personal; fi
+          xcrun simctl launch "$DEVICE" "$BUNDLE"
+          sleep 18
+          xcrun simctl io "$DEVICE" screenshot output/iPhone.png
+          DATA_DIR=$(xcrun simctl get_app_container "$DEVICE" "$BUNDLE" data)
+          cp "$DATA_DIR/Documents/qa-status.json" output/qa-status.json
           cat output/qa-status.json
-          python3 -c 'import json; d=json.load(open("output/qa-status.json")); assert d["ready"], d'
-
+          python3 -c 'import json; d=json.load(open("output/qa-status.json")); assert all(d[k] for k in ["ready","secure","crypto","version"]), d'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Mushui-AI-Extra-IPA
+          name: Mushui-1.7.0-${{ matrix.edition }}-native
           path: |
-            output/Mushui-AI-Extra-unsigned.ipa
-            output/SHA256SUMS.txt
-            output/INSTALL_WINDOWS_IOS.md
-            output/iPhone-Simulator.png
-            output/qa-status.json
+            output/*.ipa
+            output/*.png
+            output/*.json
+            device.log
+            simulator.log
           retention-days: 7
