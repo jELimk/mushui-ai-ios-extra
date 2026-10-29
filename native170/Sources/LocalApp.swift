@@ -45,7 +45,8 @@ final class NoRedirect:NSObject,URLSessionTaskDelegate{func urlSession(_ session
  case "notifications":let yes=try await UNUserNotificationCenter.current().requestAuthorization(options:[.alert,.badge,.sound]);reply(id,["granted":yes])
  case "notify":let content=UNMutableNotificationContent();content.title=args["title"] as? String ?? "沐水";content.body=args["body"] as? String ?? "";let request=UNNotificationRequest(identifier:UUID().uuidString,content:content,trigger:nil);try await UNUserNotificationCenter.current().add(request);reply(id,true)
  case "locationPermission":let m=CLLocationManager();location=m;locationCall=id;m.delegate=self;m.desiredAccuracy=kCLLocationAccuracyKilometer;m.requestWhenInUseAuthorization();locationManagerDidChangeAuthorization(m)
- case "clearCache","life":reply(id,[:])
+ case "clearCache":await WKWebsiteDataStore.default().removeData(ofTypes:[WKWebsiteDataTypeDiskCache,WKWebsiteDataTypeMemoryCache],modifiedSince:Date.distantPast);URLCache.shared.removeAllCachedResponses();reply(id,true)
+ case "life":reply(id,[:])
  default:throw failure("不支援操作："+op)
  }}catch{reply(id,nil,error.localizedDescription)}}}
  func failure(_ text:String)->NSError{NSError(domain:"Mushui",code:1,userInfo:[NSLocalizedDescriptionKey:text])}

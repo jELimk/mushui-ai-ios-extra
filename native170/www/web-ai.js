@@ -104,7 +104,7 @@ W.life=async start=>{
  W.running=start;const epoch=++W.epoch;if(!start)return {requested:false};
  if(!await W.key('chat')){W.running=false;throw Error('請先設定 API 金鑰');}
  (async()=>{let turn=0,failures=0;while(W.running&&W.epoch===epoch){
- try{if(document.hidden){await new Promise(r=>setTimeout(r,1000));continue;}
+ try{if(document.hidden&&!window.MushuiDesktop&&!window.AndroidHost){await new Promise(r=>setTimeout(r,1000));continue;}
  const s=await W.read(),st=s.settings;if(!s.ais.length||![st.autoMessages,st.autoMoments,st.autoReactions,st.autoCalls,st.autoImages&&st.autoIdentityImages].some(Boolean))break;
  const a=s.ais[turn++%s.ais.length],c=s.chats.find(c=>c.members.length===1&&c.members[0]===a.id)||{messages:[]};
  if(c.id&&W.active.has(c.id))continue;
