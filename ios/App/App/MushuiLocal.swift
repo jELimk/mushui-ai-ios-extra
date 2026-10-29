@@ -1,4 +1,5 @@
 import Foundation
+import WebKit
 import Capacitor
 import UIKit
 import Security
@@ -8,6 +9,9 @@ import UserNotifications
 @objc(AppViewController) class AppViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(MushuiLocalPlugin())
+        if let folder = try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true), let data = try? Data(contentsOf: folder.appendingPathComponent("MushuiAI/startup-font.json")), let json = String(data:data,encoding:.utf8) {
+            webView?.configuration.userContentController.addUserScript(WKUserScript(source:"window.mushuiStartupFont=\(json);",injectionTime:.atDocumentStart,forMainFrameOnly:true))
+        }
         webView?.scrollView.isScrollEnabled = false
         webView?.scrollView.contentInsetAdjustmentBehavior = .never
     }
@@ -30,7 +34,7 @@ final class NoRedirect: NSObject, URLSessionTaskDelegate {
         return folder.appendingPathComponent(key+".json")
     }
     @objc func get(_ call: CAPPluginCall) { io.async { do { let p = try self.path(call.getString("key") ?? ""); if !FileManager.default.fileExists(atPath:p.path) { call.resolve(["value":NSNull()]);return }; let v = try JSONSerialization.jsonObject(with:Data(contentsOf:p)) as? [String:Any];call.resolve(v ?? ["value":NSNull()]) } catch { call.reject(error.localizedDescription) } } }
-    @objc func put(_ call: CAPPluginCall) { io.async { do { let p = try self.path(call.getString("key") ?? ""),data = try JSONSerialization.data(withJSONObject:["value":call.options["value"] ?? NSNull()]);guard data.count <= 52*1024*1024 else { call.reject("本機資料過大");return };try data.write(to:p,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]);call.resolve() } catch { call.reject(error.localizedDescription) } } }
+    @objc func put(_ call: CAPPluginCall) { io.async { do { let p = try self.path(call.getString("key") ?? ""),data = try JSONSerialization.data(withJSONObject:["value":call.options["value"] ?? NSNull()]);guard data.count <= 52*1024*1024 else { call.reject("本機資料過大");return };try data.write(to:p,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]);if call.getString("key")=="state",let state=call.options["value"] as? [String:Any],let settings=state["settings"] as? [String:Any] { let font:[String:Any]=["font":settings["font"] ?? "system","customFont":settings["customFont"] ?? ""];try JSONSerialization.data(withJSONObject:font).write(to:p.deletingLastPathComponent().appendingPathComponent("startup-font.json"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) };call.resolve() } catch { call.reject(error.localizedDescription) } } }
     @objc func secret(_ call: CAPPluginCall) {
         let slot=call.getString("slot") ?? "";guard ["chat","image","voice"].contains(slot) else { call.reject("Unknown key slot");return }
         let q:[String:Any]=[kSecClass as String:kSecClassGenericPassword,kSecAttrService as String:"app.mushui.ai.extra",kSecAttrAccount as String:slot]

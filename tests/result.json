@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "checks": [
+    "all tabs are AI-only and have no real-friend entry",
+    "chat goes through mocked native direct transport, with zero real provider or server requests",
+    "AI relationship invitation still requires explicit acceptance",
+    "AI Moments replies work using only simulated native HTTP response",
+    "JSON backup excludes human data and all API keys",
+    "settings persist through native store contract",
+    "voice routes to simulated native transcription with no provider request"
+  ],
+  "realAIRequests": 0,
+  "externalBrowserRequests": [],
+  "errors": []
+}

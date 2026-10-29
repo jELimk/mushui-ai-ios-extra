@@ -38,6 +38,18 @@ jobs:
           zip -qry Mushui-AI-Extra-unsigned.ipa Payload
           shasum -a 256 Mushui-AI-Extra-unsigned.ipa > SHA256SUMS.txt
           cp ../INSTALL_WINDOWS_IOS.md .
+      - name: Launch local-only app in iPhone simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/SimData CODE_SIGNING_ALLOWED=NO IPHONEOS_DEPLOYMENT_TARGET=16.4 build > simulator.log 2>&1 || { tail -100 simulator.log; exit 1; }
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next(d["udid"] for devices in data["devices"].values() for d in devices if "iPhone" in d["name"]))')
+          xcrun simctl boot "$DEVICE"
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl install "$DEVICE" build/SimData/Build/Products/Release-iphonesimulator/App.app
+          xcrun simctl launch "$DEVICE" app.mushui.ai.extra
+          sleep 10
+          xcrun simctl io "$DEVICE" screenshot output/iPhone-Simulator.png
       - uses: actions/upload-artifact@v4
         with:
           name: Mushui-AI-Extra-IPA
@@ -45,4 +57,5 @@ jobs:
             output/Mushui-AI-Extra-unsigned.ipa
             output/SHA256SUMS.txt
             output/INSTALL_WINDOWS_IOS.md
+            output/iPhone-Simulator.png
           retention-days: 7
