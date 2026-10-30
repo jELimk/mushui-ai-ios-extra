@@ -81,7 +81,7 @@ async function pollCalls(){if(VoiceUI.polling||!state||!humanData().connected||w
  }catch(e){if(VoiceUI.rtc){const el=document.getElementById('voiceCallStatus');if(el)el.textContent='通話連線狀態：'+e.message;}}finally{VoiceUI.polling=false;}}
 setInterval(()=>pollCalls(),1500);
 let nativeCredentialSignature='';
-setInterval(async()=>{if(!window.webkit?.messageHandlers?.mushuiCall||!state)return;try{const d=await call('rtcCredentials'),signature=JSON.stringify(d);if(signature!==nativeCredentialSignature){nativeCredentialSignature=signature;window.webkit.messageHandlers.mushuiCall.postMessage({command:'configure',...d});}}catch{}},2000);
+setInterval(async()=>{if(!window.webkit?.messageHandlers?.mushuiCall||!state)return;try{const d=await call('rtcCredentials'),signature=JSON.stringify(d);if(signature!==nativeCredentialSignature){nativeCredentialSignature=signature;window.webkit.messageHandlers.mushuiCall.postMessage({command:'configure',...d});}}catch{}},12000);
 window.mushuiNativeCallEvent=function(event){if(event.status==='ended'){window.mushui171Sound?.('callEnd');hideCall();return;}if(['connected','active','通話中'].includes(event.status))window.mushui171Sound?.('callConnected');callScreen(event.name||'好友通話',event.message||event.status,'<button class="pill hangup" data-action="endNativeCall">掛斷</button>');};
 actions.endNativeCall=()=>nativeCall('end');
 window.addEventListener('pagehide',()=>{VoiceUI.recorder?.stop(true);const c=VoiceUI.rtc;if(c?.id)rtcRequest('end',{id:c.id}).catch(()=>{});cleanupPeer();});

@@ -30,8 +30,8 @@ function updateAccountConnectionNotice(){
 }
 const accountNoticeRender=render;render=function(){accountNoticeRender();updateAccountConnectionNotice();};
 window.addEventListener('mushui-account-updated',()=>void refreshCrossDevice());
-setInterval(()=>void refreshCrossDevice(),1500);
-setInterval(()=>{if(!window.DesktopDetached&&state&&humanData().connected&&!document.hidden)WebEngine.humanSync().then(()=>refreshCrossDevice()).catch(()=>{});},2000);
+setInterval(()=>{if(state&&humanData().connected)void refreshCrossDevice();},window.IOSHost?4000:1800);
+setInterval(()=>{if(!window.DesktopDetached&&state&&humanData().connected&&!document.hidden)WebEngine.humanSync().then(()=>refreshCrossDevice()).catch(()=>{});},window.IOSHost?4000:2500);
 const syncHumanAfterResume=()=>{if(!window.DesktopDetached&&state&&humanData().connected)WebEngine.humanSync().then(()=>refreshCrossDevice()).catch(()=>{});};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncHumanAfterResume();});
 window.addEventListener('pageshow',syncHumanAfterResume);
