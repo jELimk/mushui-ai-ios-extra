@@ -7,6 +7,11 @@ import CoreLocation
 import UserNotifications
 import WebRTC
 
+final class MushuiNotificationDelegate:NSObject,UNUserNotificationCenterDelegate {
+ func userNotificationCenter(_ center:UNUserNotificationCenter,willPresent notification:UNNotification,withCompletionHandler completionHandler:@escaping(UNNotificationPresentationOptions)->Void){completionHandler([.banner,.list,.sound,.badge])}
+}
+let mushuiNotificationDelegate=MushuiNotificationDelegate()
+
 func startupTrace(_ event:String){
  let url=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("startup-trace.json");var values=(try? Data(contentsOf:url)).flatMap{try? JSONSerialization.jsonObject(with:$0)} as? [String] ?? [];values.append(event);if let data=try? JSONSerialization.data(withJSONObject:values){try? data.write(to:url)}
 }
@@ -41,6 +46,7 @@ final class NoRedirect:NSObject,URLSessionTaskDelegate{func urlSession(_ session
 @main @MainActor struct Mushui170App:App {
  @StateObject var model=AppModel()
  @Environment(\.scenePhase) var phase
+ init(){UNUserNotificationCenter.current().delegate=mushuiNotificationDelegate}
  var body:some Scene{WindowGroup{ZStack{
   Color(red:0.98,green:0.96,blue:0.99).ignoresSafeArea()
   if let url=model.url{LocalWeb(url:url,model:model).id(model.generation).ignoresSafeArea()}
