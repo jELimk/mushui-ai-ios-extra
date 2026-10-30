@@ -32,6 +32,9 @@ const accountNoticeRender=render;render=function(){accountNoticeRender();updateA
 window.addEventListener('mushui-account-updated',()=>void refreshCrossDevice());
 setInterval(()=>void refreshCrossDevice(),1500);
 setInterval(()=>{if(!window.DesktopDetached&&state&&humanData().connected&&!document.hidden)WebEngine.humanSync().then(()=>refreshCrossDevice()).catch(()=>{});},2000);
+const syncHumanAfterResume=()=>{if(!window.DesktopDetached&&state&&humanData().connected)WebEngine.humanSync().then(()=>refreshCrossDevice()).catch(()=>{});};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncHumanAfterResume();});
+window.addEventListener('pageshow',syncHumanAfterResume);
 
 if(window.MushuiAIOnly){
  const allowed=new Set(['login','register','logout','configure','profile','deleteAccount','sync','background']);const human=WebEngine.human;WebEngine.human=d=>{if(!allowed.has(d.action))return Promise.reject(Error('純 AI 版不提供真人功能'));return human(d);};

@@ -47,7 +47,7 @@ W.human=async d=>{
  else if(d.action==='request')await W.humanRequest('/v1/requests',{id:d.userId});
  else if(d.action==='accept'||d.action==='decline')await W.humanRequest('/v1/requests/'+d.action,{requestId:d.requestId});
  else if(d.action==='profile')await W.humanRequest('/v1/profile',{name:d.name,...(d.avatar!==undefined?{avatar:d.avatar}:{}),...(d.birthday!==undefined?{birthday:d.birthday}:{})});
- else if(d.action==='send')await W.humanRequest('/v1/messages',{to:d.id,text:d.text,images:W.images(d.images),sticker:W.sticker(d.sticker),clientId:d.clientMessageId,replyTo:d.replyTo||null,files:d.files||[],virtualCard:d.virtualCard||null,audio:d.audio||null,spoilerImages:!!d.spoilerImages});
+ else if(d.action==='send')await W.humanRequest('/v1/messages',{to:d.id,text:d.text,images:W.images(d.images),sticker:W.sticker(d.sticker),clientId:d.clientMessageId,replyTo:d.replyTo||null,files:d.files||[],virtualCard:d.virtualCard||null,callEvent:!!d.callEvent,audio:d.audio||null,spoilerImages:!!d.spoilerImages});
  else if(d.action!=='sync')throw Error('不支援的人類操作');
  await W.humanSync();return {state:await W.view()};
 };
@@ -67,7 +67,7 @@ W.dispatch=async(op,d)=>{
  if(op==='rtcCredentials'){const s=await W.read();return {server:s.human.serverUrl,token:await W.key('human')};}
  if(op==='voiceConfig'){W.url(d.url);if(!/^[A-Za-z0-9._-]{1,120}$/.test(d.model))throw Error('語音模型名稱無效');if(d.key!==undefined)await W.key('voice',d.key);await W.edit(s=>{s.settings.voiceBaseUrl=d.url;s.settings.voiceModel=d.model;});return {state:await W.view()};}
  if(op==='voiceNote'){await W.edit(s=>W.append(W.find(s.chats,d.id),'me','［通話語音轉寫］'+W.clean(d.text,10000)));return {};}
- if(op==='voiceTranscribe'){const s=await W.read(),key=await W.key('voice')||(new URL(s.settings.voiceBaseUrl||'https://api.openai.com/v1').origin===new URL(s.settings.baseUrl).origin?await W.key('chat'):'');if(!key)throw Error('請先設定語音辨識 API 金鑰');const r=await fetch('/v1/proxy',{method:'POST',headers:{'Content-Type':'application/json','X-Mushui-Web-Session':await W.session()},body:JSON.stringify({url:W.url(s.settings.voiceBaseUrl||'https://api.openai.com/v1')+'/audio/transcriptions',headers:{Authorization:'Bearer '+key},transcription:true,audio:d.audio,model:s.settings.voiceModel||'whisper-1'})}),data=await r.json();if(!r.ok||!data.text?.trim())throw Error(('語音辨識失敗：'+(data.error?.message||data.error||'沒有文字')).replaceAll(key,'[金鑰]'));return {text:data.text.trim()};}
+ if(op==='voiceTranscribe'){const s=await W.read(),key=await W.key('voice')||(new URL(s.settings.voiceBaseUrl||'https://api.openai.com/v1').origin===new URL(s.settings.baseUrl).origin?await W.key('chat'):'');if(!key)throw Error('請先設定語音辨識 API 金鑰');const r=await fetch('/v1/proxy',{method:'POST',headers:{'Content-Type':'application/json','X-Mushui-Web-Session':await W.session()},body:JSON.stringify({url:W.url(s.settings.voiceBaseUrl||'https://api.openai.com/v1')+'/audio/transcriptions',headers:{Authorization:'Bearer '+key},transcription:true,audio:d.audio,language:'zh',prompt:'請用繁體中文逐字轉寫這段口語對話，保留原話與語氣，不要翻譯成其他語言。常見說法例如「你在幹嘛呀」。',model:s.settings.voiceModel||'whisper-1'})}),data=await r.json();if(!r.ok||!data.text?.trim())throw Error(('語音辨識失敗：'+(data.error?.message||data.error||'沒有文字')).replaceAll(key,'[金鑰]'));return {text:data.text.trim()};}
  if(op==='pick')return W.pick(d.kind);
  if(op==='notifications')return W.notifications();
  if(op==='load')return W.view();

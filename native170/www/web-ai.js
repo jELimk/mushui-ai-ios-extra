@@ -28,8 +28,8 @@ W.complete=async(st,system,messages)=>{
 W.system=a=>'你是「'+a.name+'」，以繁體中文自然聊天，保持個性，不替其他人發言。使用者明確歡迎你持續主動傳訊息，訊息多也不會造成打擾；不要因為傳太多而道歉、害羞、自責或擔心打擾，依個性自然分享生活，不需等使用者先回覆。\n個性：'+a.personality+'\n永久外貌（原文不可更換）：'+(a.appearance||'尚未建立')+'\n長期記憶：'+(a.summary||'')+'\n當前綁定關係優先於舊摘要：'+(a.relationship?JSON.stringify(a.relationship):'目前未綁定，不因舊聊天自行恢復綁定。');
 W.imageStyle=a=>'圖片是偶爾、自發且符合情境的分享，以文字聊天為主；不要每句話固定送圖片。沒有回合數、時間或隨機門檻攔阻你在合適時機生圖。上次成功生圖時間：'+(a.lastImageSuccess||'尚無');
 W.context=(s,a,c)=>{
- const n=s.settings.unifiedMemory?s.settings.memory:a.memory||80,record=c.memories?.[a.id],through=record?c.messages.findIndex(m=>m.id===record.throughId):-1;
- return c.messages.slice(Math.max(through+1,c.messages.length-n)).map(m=>{
+ const messages=c.messages.filter(m=>!m.callEvent),n=s.settings.unifiedMemory?s.settings.memory:a.memory||80,record=c.memories?.[a.id],through=record?messages.findIndex(m=>m.id===record.throughId):-1;
+ return messages.slice(Math.max(through+1,messages.length-n)).map(m=>{
  let text=m.text||'';if(m.author!=='me'&&m.author!==a.id)text=W.person(s,m.author)+'：'+text;if(m.sticker)text+='\n［表情包：'+W.sticker(m.sticker).name+'；請依這個表情含義理解語氣，不要杜撰其它影像細節］';if(m.virtualCard)text+='\n［純虛擬心意卡片：'+JSON.stringify(m.virtualCard)+'］';
  let content=text;if(m.images?.length){if(m.author==='me'&&W.vision(s.settings))content=[{type:'text',text:text||'請依個性回應照片。'},...m.images.map(url=>({type:'image_url',image_url:{url}}))];else content+='\n［AI 想像圖片；場景：'+(m.scene||'無具體描述')+'］';}return {role:m.author===a.id?'assistant':'user',content};
  });

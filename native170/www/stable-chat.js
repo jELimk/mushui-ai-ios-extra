@@ -1,11 +1,14 @@
 'use strict';
 window.installStableChat=()=>{
  if(window.StableChatInstalled)return;window.StableChatInstalled=true;
- const limit=new Map();let session=null;
+ const limit=new Map();let session=null,composingInput=null,renderAfterComposition=false;
+ document.addEventListener('compositionstart',event=>{if(event.target?.matches?.('.composer textarea[data-input="message"]'))composingInput=event.target;},true);
+ document.addEventListener('compositionend',event=>{if(event.target!==composingInput)return;composingInput=null;if(renderAfterComposition){renderAfterComposition=false;requestAnimationFrame(()=>render());}},true);
  function anchor(node){const top=node.getBoundingClientRect().top;const m=[...node.querySelectorAll('[data-message-id]')].find(m=>m.getBoundingClientRect().bottom>top+1);return m?{id:m.dataset.messageId,offset:m.getBoundingClientRect().top-top}:null;}
  function place(s){if(session!==s||!s.node.isConnected)return;const n=s.node;if(s.follow)n.scrollTop=n.scrollHeight;else{const m=s.anchor&&n.querySelector('[data-message-id="'+CSS.escape(s.anchor.id)+'"]');n.scrollTop=m?n.scrollTop+m.getBoundingClientRect().top-n.getBoundingClientRect().top-s.anchor.offset:s.top;}}
  document.addEventListener('compositionend',()=>{if(window.chatRenderPending){window.chatRenderPending=false;requestAnimationFrame(()=>render());}});
  const before=render;render=function(){
+  if(composingInput?.isConnected){renderAfterComposition=true;return;}
   if(composingText){window.chatRenderPending=true;return;}
   const old=document.querySelector('.message-scroll'),same=old&&old.dataset.chatId===chatId;
   const saved=same?{follow:old.scrollHeight-old.clientHeight-old.scrollTop<32,anchor:anchor(old),top:old.scrollTop}:null;

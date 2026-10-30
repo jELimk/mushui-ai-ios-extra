@@ -4,7 +4,7 @@ paths.pin='M8 3h8l-1 6 3 3v2H6v-2l3-3-1-6 M12 14v7';
 function activeChat(){return isHumanChat()?{messages:humanData().messages.filter(m=>m.sender===chatId.slice(6)||m.recipient===chatId.slice(6)),messagePins:humanData().messagePins||{}}:state?.chats.find(c=>c.id===chatId);}
 function messageById(id){return activeChat()?.messages.find(m=>String(m.id)===String(id).replace(/^human-/,''));}
 function messageLabel(m){return String(m?.text|| (m?.audio?'［語音訊息］':m?.files?.length?'［'+m.files[0].name+'］':'［圖片／表情］')).replace(/\s+/g,' ').slice(0,120);}
-function messageAuthor(m){return m.author|| (m.sender===humanData().me.id?'me':'human:'+m.sender);}
+function messageAuthor(m){return isHumanChat()?(String(m.sender).toLowerCase()===String(humanData().me.id).toLowerCase()?'me':'human:'+m.sender):(m.author||'me');}
 function messageOwnerName(m){const id=messageAuthor(m);return id==='me'?(state.settings.nickname||'我'):id.startsWith('human:')?humanFriend(id.slice(6)).name:person(id).name;}
 function pinnedIds(){const ch=activeChat();const visible=new Set(ch?.messages.map(m=>String(m.id))||[]);return Object.entries(ch?.messagePins||{}).filter(([id,v])=>v.value&&visible.has(id)).map(([id])=>id);}
 let messageMenuId='';
@@ -32,7 +32,7 @@ W.append=(ch,author,text,extra={})=>{const payload=envelopes.get(extra.clientMes
 W.dispatch=async(op,d={})=>{
  if(op==='messageAction'){
   if(d.id.startsWith('human:')){await W.humanRequest('/v1/message-tools',{...d,peer:d.id.slice(6)});await W.humanSync();return{state:await W.view()};}
-  await W.edit(s=>{const ch=W.find(s.chats,d.id),m=W.find(ch.messages,String(d.messageId));if(d.action==='edit'){if(m.author!=='me')throw Error('只能編輯自己送出的訊息');const text=W.clean(d.text,10000);if(!text)throw Error('文字不可空白');m.text=text;m.editedAt=Date.now();}else if(d.action==='pin'){ch.messagePins||={};ch.messagePins[m.id]={value:!ch.messagePins[m.id]?.value,updatedAt:Date.now()};}else throw Error('未知訊息操作');});return{state:await W.view()};
+  let regenerate=false;await W.edit(s=>{const ch=W.find(s.chats,d.id),index=ch.messages.findIndex(x=>String(x.id)===String(d.messageId)),m=ch.messages[index];if(!m)throw Error('找不到這則訊息');if(d.action==='edit'){if(m.author!=='me')throw Error('只能編輯自己送出的訊息');const text=W.clean(d.text,10000);if(!text)throw Error('文字不可空白');m.text=text;m.editedAt=Date.now();regenerate=!ch.messages.slice(index+1).some(x=>x.author==='me');if(regenerate){ch.messages=ch.messages.slice(0,index+1);delete ch.failedAI;}}else if(d.action==='pin'){ch.messagePins||={};ch.messagePins[m.id]={value:!ch.messagePins[m.id]?.value,updatedAt:Date.now()};}else throw Error('未知訊息操作');});if(regenerate){await dispatch('send',{id:d.id,retry:true});return{state:await W.view()};}return{state:await W.view()};
  }
  if(op==='send'){
   if(d.editMessageId)return W.dispatch('messageAction',{id:d.id,messageId:d.editMessageId,action:'edit',text:d.text});
