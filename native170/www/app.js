@@ -134,7 +134,7 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape')window.goBac
 async function refreshFromNative(){if(!state)return;try{const next=await call('load');if(JSON.stringify(next)!==JSON.stringify(state)){state=next;if(!modal&&tab!=='settings')render();}}catch{}}
 window.refreshFromNative=refreshFromNative;
 // Page refresh is manual; background jobs never replace the visible page.
-async function boot(){try{state=await call('load');render();}catch(e){$('#app').innerHTML=`<div class="empty">${drop()}<h2>沐水</h2><p>${esc(e.message)}</p><button class="pill" data-action="reload">重新載入</button></div>`;actions.reload=boot;}}
+async function boot(){try{state=await call('load');render();}catch(e){window.__mushuiBootError=String(e?.message||e);try{window.webkit?.messageHandlers?.mushuiDiag?.postMessage({kind:'boot-error',message:window.__mushuiBootError});}catch{}$('#app').innerHTML=`<div class="empty">${drop()}<h2>沐水</h2><p>${esc(e.message)}</p><button class="pill" data-action="reload">重新載入</button></div>`;actions.reload=boot;}}
 boot();
 
 function updateConversationFrame(html){
