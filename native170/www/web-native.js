@@ -52,7 +52,7 @@ W.human=async d=>{
  await W.humanSync();return {state:await W.view()};
 };
 W.notifications=async()=>{
- if(window.MushuiNativeIOS)throw Error('原生版尚未接入 Apple APNs 推播。前景可接來電；已接通的原生通話使用背景音訊。Safari 主畫面版仍可授權好友推播。');
+ if(window.MushuiNativeIOS||window.AndroidHost)return Desktop.invoke('notifications');
  if(!('Notification'in window)||!('serviceWorker'in navigator)||!('PushManager'in window))throw Error('請使用支援推播的 Safari 主畫面 App（iOS 16.4 以上）');
  if(!await W.key('human'))throw Error('好友推播需要先登入人類帳號');
  const granted=await Notification.requestPermission();if(granted!=='granted')return {granted:false};

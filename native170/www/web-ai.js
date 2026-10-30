@@ -25,7 +25,7 @@ W.complete=async(st,system,messages)=>{
  const text=claude?(result.content||[]).filter(c=>c.type==='text').map(c=>c.text).join(''):responses?(result.output||[]).flatMap(o=>o.content||[]).filter(c=>c.type==='output_text').map(c=>c.text).join(''):result.choices?.[0]?.message?.content;
  if(!text?.trim())throw Error('模型未回傳文字');return text.trim();
 };
-W.system=a=>'你是「'+a.name+'」，以繁體中文自然聊天，保持個性，不替其他人發言。使用者明確歡迎你持續主動傳訊息，訊息多也不會造成打擾；不要因為傳太多而道歉、害羞、自責或擔心打擾，依個性自然分享生活，不需等使用者先回覆。\n個性：'+a.personality+'\n永久外貌（原文不可更換）：'+(a.appearance||'尚未建立')+'\n長期記憶：'+(a.summary||'')+'\n當前綁定關係優先於舊摘要：'+(a.relationship?JSON.stringify(a.relationship):'目前未綁定，不因舊聊天自行恢復綁定。');
+W.system=a=>'你是「'+a.name+'」，以繁體中文自然聊天，保持個性，不替其他人發言。使用者明確歡迎你持續主動傳訊息，訊息多也不會造成打擾；不要因為傳太多而道歉、害羞、自責或擔心打擾，依個性自然分享生活，不需等使用者先回覆。\n聊天節奏：每則訊息簡短自然，通常約 5–45 個中文字、一個想法一個氣泡，不寫長段落、不列清單。想連續分享幾個自然反應時，分成 2–4 則獨立短訊息；可回 JSON {messages:[短句1,短句2]}。沒有必要時只傳一則。\n個性：'+a.personality+'\n永久外貌（原文不可更換）：'+(a.appearance||'尚未建立')+'\n長期記憶：'+(a.summary||'')+'\n當前綁定關係優先於舊摘要：'+(a.relationship?JSON.stringify(a.relationship):'目前未綁定，不因舊聊天自行恢復綁定。');
 W.imageStyle=a=>'圖片是偶爾、自發且符合情境的分享，以文字聊天為主；不要每句話固定送圖片。沒有回合數、時間或隨機門檻攔阻你在合適時機生圖。上次成功生圖時間：'+(a.lastImageSuccess||'尚無');
 W.context=(s,a,c)=>{
  const messages=c.messages.filter(m=>!m.callEvent),n=s.settings.unifiedMemory?s.settings.memory:a.memory||80,record=c.memories?.[a.id],through=record?messages.findIndex(m=>m.id===record.throughId):-1;
@@ -83,8 +83,9 @@ W.send=async d=>{
  try{raw=await W.complete(st,system,W.context(s,ai,ch));}
  catch(e){if(photos&&[400,415,422].includes(e.status)&&/image|vision|圖片|照片/i.test(e.message)&&/not support|unsupported|不支援|only text/i.test(e.message))raw='目前模型無法做到辨識照片，請切換模型再試。';else throw e;}
  }
- let packet={text:raw};try{const parsed=W.json(raw);if(parsed.text)packet=parsed;}catch{}
- await W.edit(s=>{const c=s.chats.find(c=>c.id===d.id||(c.aliases||[]).includes(d.id));if(!c||!s.ais.some(a=>a.id===id)||!c.members.includes(id))return;const m=W.append(c,id,W.clean(packet.text,12000),{voiceRequested:!!packet.voice});if(s.settings.virtualCards)m.virtualCard=W.canonicalCard(packet.card);W.attachInvite?.(s,c,m,packet.relationshipInvite);delete c.error;delete c.failedAI;});
+ let packet={text:raw};try{const parsed=W.json(raw);if(parsed.text||Array.isArray(parsed.messages))packet=parsed;}catch{}
+ const shortParts=value=>{const clean=W.clean(value,12000).trim();if(!clean)return[];if(clean.length<=70)return[clean];const sentences=clean.split(/(?<=[。！？!?；;])|\n+/u).map(x=>x.trim()).filter(Boolean),out=[];let part='';for(const sentence of sentences){if(part&&part.length+sentence.length<=70){part+=sentence;continue;}if(part)out.push(part);part='';if(sentence.length<=70){part=sentence;continue;}const clauses=sentence.split(/(?<=[，、,])|(?<=\s)/u).map(x=>x.trim()).filter(Boolean);for(const clause of clauses){if(part&&part.length+clause.length>70){out.push(part);part='';}if(clause.length<=70)part+=clause;else{for(let at=0;at<clause.length;at+=70){if(part)out.push(part);part=clause.slice(at,at+70);}}}}if(part)out.push(part);return out;};const replyParts=Array.isArray(packet.messages)?packet.messages.flatMap(shortParts):shortParts(packet.text);if(!replyParts.length)replyParts.push('我在這裡。');
+ await W.edit(s=>{const c=s.chats.find(c=>c.id===d.id||(c.aliases||[]).includes(d.id));if(!c||!s.ais.some(a=>a.id===id)||!c.members.includes(id))return;let m;for(const part of replyParts)m=W.append(c,id,part,{voiceRequested:!!packet.voice});if(m&&s.settings.virtualCards)m.virtualCard=W.canonicalCard(packet.card);W.attachInvite?.(s,c,m,packet.relationshipInvite);delete c.error;delete c.failedAI;});
  if(packet.image&&packet.image.share!==false&&(await W.read()).settings.autoImages)try{await W.generate(d.id,id,packet.image);}catch(e){await W.edit(s=>{const c=s.chats.find(c=>c.id===d.id||(c.aliases||[]).includes(d.id));if(c)c.mediaError=e.message;});}
  await W.compress(d.id,id);
  }catch(e){await W.edit(s=>{const c=s.chats.find(c=>c.id===d.id||(c.aliases||[]).includes(d.id));if(c&&s.ais.some(a=>a.id===id)){c.error=e.message;c.failedAI=id;}});throw e;}
@@ -111,14 +112,14 @@ W.life=async start=>{
  const feed=s.moments.filter(p=>W.visible(p,a.id)).slice(-20).map(p=>({id:p.id,author:W.person(s,p.author),text:p.text,comments:p.comments.slice(-20)}));
  const decision=W.json(await W.complete(st,W.system(a)+'\n'+W.imageStyle(a),[...W.textOnly(W.context(s,a,c)),{role:'user',content:'自主生活判斷，不需等使用者回覆，睡覺仍可依個性分享，不設安靜時段，不要固定台詞。允許：'+JSON.stringify({message:st.autoMessages,moment:st.autoMoments,react:st.autoReactions,call:st.autoCalls,image:st.autoImages})+'。只回 JSON {kind:none/message/moment/react/call/image,text:內容,postId:回應貼文,comment:留言,like:true,visibleTo:可選的可見ID陣列,voice:是否適合語音布林值,image:{kind:photo/avatar/cover/inviteAvatar/inviteCover,scene:場景}}。角色ID：'+JSON.stringify(s.ais.map(a=>({id:a.id,name:a.name})))+'，me 是使用者。可見貼文：'+JSON.stringify(feed)}]));
  if(!W.running||W.epoch!==epoch)break;
- let proactiveVoice;
+ let proactiveVoice,proactiveNotice;
  if(decision.kind==='image'&&st.autoImages){let id;await W.edit(s=>{id=W.dm(s,a.id).id;});await W.generate(id,a.id,decision.image||null);}
  else await W.edit(s=>{if(!s.ais.some(v=>v.id===a.id))return;const st=s.settings,text=W.clean(decision.text,5000);
- if(decision.kind==='message'&&st.autoMessages&&text){const c=W.dm(s,a.id);if(!W.active.has(c.id)){const m=W.append(c,a.id,text,{voiceRequested:!!decision.voice});if(a.voiceProfile?.enabled&&m.voiceRequested)proactiveVoice={chatId:c.id,messageId:m.id,aiId:a.id,text};W.attachInvite?.(s,c,m,decision.relationshipInvite);c.unread=(c.unread||0)+1;}}
- else if(decision.kind==='moment'&&st.autoMoments&&text){const visibleTo=decision.visibleTo;if(visibleTo&&!Array.isArray(visibleTo))return;if(visibleTo&&visibleTo.some(id=>id!=='me'&&!s.ais.some(a=>a.id===id)))return;s.moments.push({id:W.id(),author:a.id,text,images:[],time:Date.now(),likes:[],comments:[],...(visibleTo?{visibleTo:[...new Set(visibleTo)]}:{})});}
+ if(decision.kind==='message'&&st.autoMessages&&text){const c=W.dm(s,a.id);if(!W.active.has(c.id)){const m=W.append(c,a.id,text,{voiceRequested:!!decision.voice});if(a.voiceProfile?.enabled&&m.voiceRequested)proactiveVoice={chatId:c.id,messageId:m.id,aiId:a.id,text};W.attachInvite?.(s,c,m,decision.relationshipInvite);c.unread=(c.unread||0)+1;proactiveNotice={title:a.name,body:text,tag:'ai-'+m.id};}}
+ else if(decision.kind==='moment'&&st.autoMoments&&text){const visibleTo=decision.visibleTo;if(visibleTo&&!Array.isArray(visibleTo))return;if(visibleTo&&visibleTo.some(id=>id!=='me'&&!s.ais.some(a=>a.id===id)))return;s.moments.push({id:W.id(),author:a.id,text,images:[],time:Date.now(),likes:[],comments:[],...(visibleTo?{visibleTo:[...new Set(visibleTo)]}:{})});proactiveNotice={title:a.name+' 發佈了朋友圈',body:text,tag:'ai-moment-'+Date.now()};}
  else if(decision.kind==='call'&&st.autoCalls&&!s.activeCall)W.callBegin(s,a.id,true);
  else if(decision.kind==='react'&&st.autoReactions){const p=s.moments.find(p=>p.id===decision.postId);if(p&&W.visible(p,a.id)&&!['queued','running'].includes(p.replyState)){if(decision.comment)p.comments.push({author:a.id,text:W.clean(decision.comment,1000),time:Date.now()});if(decision.like&&!p.likes.includes(a.id))p.likes.push(a.id);}}
- s.activity.lastSuccess=Date.now();s.activity.lastError='';});if(proactiveVoice&&W.speakMessage)await W.speakMessage(proactiveVoice);failures=0;await new Promise(r=>setTimeout(r,250));
+ s.activity.lastSuccess=Date.now();s.activity.lastError='';});if(proactiveNotice){window.mushui171Sound?.('notice');window.mushuiMobileNotice?.(proactiveNotice);}if(proactiveVoice&&W.speakMessage)await W.speakMessage(proactiveVoice);failures=0;await new Promise(r=>setTimeout(r,250));
  }catch(e){failures++;await W.edit(s=>{s.activity.lastError=e.message;});await new Promise(r=>setTimeout(r,Math.min(300000,5000*2**Math.min(failures-1,6))));}
  }if(epoch===W.epoch)W.running=false;})().catch(()=>{W.running=false;});
  return {requested:true};
