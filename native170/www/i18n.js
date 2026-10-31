@@ -1,0 +1,547 @@
+'use strict';
+
+(()=>{
+
+const dict={
+
+'聊天':'Chats','聯絡人':'Contacts','朋友圈':'Moments','設定':'Settings','沐水':'Mushui','我的最愛':'Favorites','最愛':'Favorites','AI':'AI','人類':'People',
+
+'建立新聊天或群組':'New chat or group','搜尋聊天':'Search chats','搜尋名字或拼音':'Search by name','搜尋名字或拼音 A-Z 排列':'Search by name · A–Z','開始聊天':'Start chatting','傳訊息':'Message','輸入訊息':'Write a message','傳訊息給好友…':'Message a friend…','說點什麼…':'Write something…','傳送':'Send','取消':'Cancel','儲存':'Save','刪除':'Delete','編輯':'Edit','完成':'Done','確認':'Confirm','返回':'Back','關閉':'Close','重新整理':'Refresh','重新載入':'Reload','重試':'Try again','重試傳送':'Retry sending','上傳':'Upload','匯入':'Import','匯出':'Export','新增':'Add','新增聊天':'New chat','新增好友':'Add friend','建立群組':'Create group','建立新聊天或群組':'New chat or group',
+
+'個人資料':'Profile','個人頁面':'Profile','生日':'Birthday','紀念日':'Anniversary','綁定關係':'Relationship','記憶':'Memory','API':'API','模型':'Model','語音與通話識別':'Voice and call recognition','通知':'Notifications','備份與還原':'Backup and restore','關於':'About','音效板與好友分享':'Soundboard and sharing','手機使用說明':'Mobile user guide','背景陪伴／通知選項':'Background activity and notifications','照片與圖片生成':'Photos and image generation','儲存空間與快取':'Storage and cache','變':'Customize','把沐水調成你喜歡的樣子':'Make Mushui yours','語言':'Language','跟隨系統':'Follow system','系統預設':'Follow system','繁體中文':'Traditional Chinese','英文':'English',
+
+'AI 角色':'AI characters','我的 AI':'My AI','開始持續陪伴':'Start background activity','停止':'Stop','允許訊息與來電通知':'Allow message and call notifications','允許訊息通知':'Allow message notifications','好友伺服器':'Friend server','帳號與跨裝置同步':'Account and sync','立即同步':'Sync now','登入／帳號':'Sign in / account','音色設定':'Voice settings','選擇模型':'Choose a model','選擇主題':'Choose a theme','選擇字體':'Choose a font','調整文字大小':'Text size','清除快取':'Clear cache','匯出 JSON 備份':'Export JSON backup','還原備份':'Restore backup',
+
+'全部':'All','公開':'Public','僅自己':'Only me','留言':'Comment','按讚':'Like','已讀':'Read','正在輸入':'Typing','正在傳送':'Sending','已傳送':'Sent','已結束通話':'Call ended','正在通話中':'In a call','通話中':'In call','接聽':'Answer','拒接':'Decline','掛斷':'Hang up','語音':'Voice message','正在錄音':'Recording','播放語音':'Play voice message','停止播放':'Stop playback','好友來電':'Incoming call','邀請':'Invite','群組名稱':'Group name','開始聊天吧':'Start chatting',
+
+'選擇一位開始私聊，選多位建立群組。':'Choose one person to chat, or select several to create a group.','這裡還是一張白紙。':'A blank page, ready for a new story.','匯入後，你的 AI 會出現在聯絡人，等你開啟第一段對話。':'Imported AI characters appear in Contacts, ready for your first chat.','等待導入 AI':'Waiting for AI characters','搜尋名字或拼音':'Search names','姓名':'Name','個性':'Personality','固定外貌':'Fixed appearance','頭像':'Avatar','朋友圈背景':'Moments cover','自訂背景':'Custom background','發佈朋友圈':'Post to Moments','發朋友圈':'Post to Moments','新的對話':'New chat','選擇成員':'Choose members','一般':'General','已開啟':'On','已關閉':'Off','開啟':'On','關閉':'Off','是':'Yes','否':'No','確定':'OK','套用':'Apply','返回聊天':'Back to chats',
+
+'此功能需要權限':'This feature requires permission','需要麥克風權限才能錄音與通話':'Microphone access is needed to record and call.','照片與影片':'Photos and videos','圖片':'Image','拍照':'Take photo','上傳圖片':'Upload image','上傳文件':'Upload file','表情包':'Stickers','語音輸入':'Voice input','打電話':'Call','轉帳':'Transfer','送禮':'Send a gift','發紅包':'Send a red packet','目前模型無法做到辨識照片，請切換模型再試。':'This model cannot analyze images. Switch models and try again.',
+
+'連線失敗':'Connection failed','請檢查連線、金鑰與模型':'Check your connection, API key, and model.','API 金鑰不會隨帳號同步。':'API keys are not synced between devices.','需要 HTTPS 網址':'An HTTPS address is required.','沒有符合的聊天。':'No matching chats.','尚無朋友圈':'No Moments yet.','尚無好友':'No friends yet.','尚無 AI':'No AI characters yet.','設定已儲存':'Settings saved','已儲存':'Saved','請稍候':'Please wait','已完成':'Completed','需要權限':'Permission required','登入':'Sign in','登出':'Sign out','密碼':'Password','暱稱':'Nickname','好友':'Friend','版本':'Version',
+
+'沐水幣餘額':'Mushui coin balance','枚':'coins','沐水幣只供 App 內的虛擬轉帳、紅包與送禮互動使用，沒有現金價值、不能購買或提領。送給 AI 的心意會記錄在該角色的好感資料。':'Mushui coins are only for virtual transfers, red packets, and gifts in the app. They have no cash value and cannot be purchased or withdrawn. Gifts to AI are recorded as affinity.','每日零用幣已領取':'Daily coins claimed','領取每日 1,000 枚零用幣':'Claim 1,000 daily coins','通知與通話提示音':'Notification and call sounds','預設提示音為沐水原創合成音，可逐項關閉或上傳你有權使用的短音檔（WAV、MP3、M4A；最多 5 MB、10 秒）。':'Original Mushui tones are enabled by default. You can turn each one off or upload a short sound you have rights to use (WAV, MP3, M4A; up to 5 MB and 10 seconds).','新訊息通知':'New message','電話鈴聲':'Ringtone','通話接通':'Call connected','結束通話':'Call ended','開始分享畫面':'Screen sharing started','停止分享畫面':'Screen sharing stopped','開啟視訊':'Video on','關閉視訊':'Video off','閉麥':'Microphone muted','開啟麥克風':'Microphone on','沐水原創提示音':'Original Mushui sound','已使用自訂音效':'Custom sound in use','試聽':'Preview','移除':'Remove','UNDERTALE／DELTARUNE 原聲與音效不會隨 App 重新散佈；可匯入你有權使用的音檔。':'UNDERTALE / DELTARUNE music and effects are not redistributed with the app. You can import audio you have permission to use.','音效保存在此手機。可上傳、試聽、下載好友分享，或同步給已互加的好友；不會開啟瀏覽器。僅分享自己有權使用的音檔。':'Sounds are stored on this phone. Upload, preview, download shared sounds, or share with mutual friends without opening a browser. Only share audio you have permission to use.','音效已加入本機':'Sound added to this device','同步給好友':'Share with friend'
+
+};
+
+Object.assign(dict,{'特殊星星':'Special Star','裝置事件':'Device events','特殊星星提醒對象':'Special Star recipients','特殊星星提醒對象':'Special Star recipients','特殊星星 · 裝置事件':'Special Star · Device events','特殊星星':'Special Star','允許裝置事件提醒':'Allow device event reminders','開啟其他 App 時提醒':'Notify when opening other apps','電量／充電狀態提醒':'Battery and charging alerts','螢幕開啟／關閉提醒':'Screen on/off alerts','長時間亮屏提醒':'Long screen-on alert','接收對象':'Recipients','選擇':'Choose','使用情況存取權':'Usage access','開啟 Android 使用情況存取權':'Grant Android usage access','使用精確定位':'Use precise location','精準位置':'Precise location','授權精確定位':'Allow precise location','精確定位已授權；請按右上角儲存':'Precise location allowed. Tap Save.','精確定位會揭露實際座標。可隨時關閉上方位置分享並撤銷系統權限；位置仍可能因訊號與背景省電而延遲。':'Precise location shares your coordinates with the configured API. You can turn off sharing or revoke permission at any time. Background updates may be delayed.','此功能預設關閉。開啟並選好特殊星星後，沐水才會把你選取的事件轉成簡短訊息傳給對象；每種事件最多每小時一次。只傳事件名稱與必要的 App 顯示名稱，不讀取通知、訊息、銀行或付款內容。':'This is off by default. After enabling it and selecting recipients, Mushui sends brief messages about selected events, at most once per event type per hour. It shares only the event and necessary app name; notification, message, bank, and payment contents are not read.','開啟其他 App 時提醒':'Alert when another app opens','僅讀取前景 App 名稱，並按每小時限頻。':'Only the foreground app name is used, with an hourly limit.','只在低電量、開始充電或充滿時產生事件。':'Alerts only for low battery, charging, or fully charged events.','Android 背景服務運作期間偵測螢幕狀態變化。':'Detects screen state changes while the Android background service is running.','Android 背景服務運作期間，亮屏達 4 小時才提醒。':'Alerts after the screen stays on for four hours while the Android service is running.','先在聯絡人中把 AI 或好友標記為「特殊星星」，才能選為提醒對象。':'Mark an AI or friend as a Special Star in Contacts before selecting them.','此版本無法取得 Android 裝置事件權限；iOS、iPadOS 與 Windows 不提供跨 App 開啟與鎖屏監測 API。':'This build cannot access Android device events. iOS, iPadOS, and Windows do not allow monitoring other apps or lock state.','iOS 不允許偵測其它 App、鎖屏、關機或消費；本 App 不讀取支付通知或銀行資料。位置與人類即時位置分享將在各自權限流程中單獨處理。':'iOS does not allow monitoring other apps, lock state, shutdown, or spending. Mushui does not read payment notifications or bank data. Location and live sharing require separate consent.','Android 需額外開啟「使用情況存取權」。':'Android requires Usage Access permission.','會將精確座標傳給你設定的聊天 API；仍須在上方開啟「讓 AI 知道我的約略位置」。':'Precise coordinates are sent to your configured chat API. Also enable location sharing above.','裝置事件提醒':'Device event reminder','允許精確定位':'Allow precise location','特殊星星只用於你明確開啟並選擇的裝置事件提醒。':'Special Stars receive device event alerts only when you explicitly enable the feature and select them.'});
+
+Object.assign(dict,{'即時位置':'Live location','向此好友分享我的精確位置':'Share my precise location with this friend','停止向此好友分享位置':'Stop sharing my location with this friend','查看對方分享的位置':'View their shared location','好友目前位置':'Friend’s current location','對方目前沒有向你分享位置，或最後位置已超過兩分鐘。':'They are not sharing their location, or the last update is over two minutes old.','只有雙方各自開啟分享時，才能互相查看。':'Each person must enable sharing before you can view each other’s location.','定位精度約':'Location accuracy about','更新於':'Updated','在地圖查看':'View on map','伺服器只保留最新位置，超過兩分鐘會視為過期。':'The server stores only the latest location and expires it after two minutes.','精確位置會揭露實際座標。':'Precise location reveals your coordinates.','已開始精確位置分享；只保留最新位置':'Precise location sharing started. Only the latest location is kept.','停止分享；伺服器上的座標已清除':'Sharing stopped. The server location was deleted.','背景位置':'Background location','授權背景位置':'Allow background location'});
+
+Object.assign(dict,{'永遠保留的外貌':'Always keep appearance','外觀':'Appearance','圖標外觀':'App icon appearance','App 顯示名稱':'App display name','選擇沐水啟動畫面與 App 內顯示的名稱；不會改變你的角色暱稱。':'Choose the name shown on the Mushui launch screen and in the app. This does not change your character nickname.','圖標配色獨立於 App 主題；選擇後會更新沐水啟動畫面與這裡的圖標預覽。':'Icon colors are separate from the app theme. The launch screen and preview use this selection.','更改密碼':'Change password','目前密碼':'Current password','新密碼':'New password','確認新密碼':'Confirm new password','更新密碼':'Update password','綁定郵箱':'Bind email','電子郵件地址':'Email address','隱私與安全性':'Privacy and security','密碼與郵箱':'Password and email','請先登入':'Sign-in required','前往登入／註冊':'Sign in or register','開始使用前，請先登入或註冊好友帳號。登入後才會開啟聊天、聯絡人與同步資料。':'Sign in or register a friend account before using chats, contacts, and sync.','AI 專用版不需要好友帳號。':'The AI-only edition does not require a friend account.','拍照後自動保存到裝置':'Save captured photos to device','郵箱會儲存在好友伺服器作為帳號聯絡資訊。目前版本不會寄送驗證碼，也不會用郵箱登入或重設密碼。':'The email is stored on your friend server as account contact information. This version does not send a verification code or use email for sign-in or password recovery.','郵箱已保存（尚未驗證）':'Email saved (not verified)'});
+
+Object.assign(dict,{'跟隨系統':'Follow system','預設跟隨系統語言，英文系統顯示 Mizuki，也可以手動選擇沐水。':'Follows your system language by default. English systems show Mizuki; you can still choose 沐水 manually.','寄送郵箱驗證碼':'Send email verification code','驗證並更新密碼':'Verify and update password','驗證並綁定郵箱':'Verify and bind email','郵箱驗證成功，密碼已更新':'Email verified; password updated','驗證碼已寄到已驗證的郵箱':'A verification code was sent to your verified email','驗證碼已寄出，請查收郵箱':'Verification code sent. Check your email.','需先綁定並驗證郵箱；驗證碼 10 分鐘有效。密碼長度為 8–128 個字元，更改後目前裝置保持登入。':'Bind and verify your email first. Codes expire in 10 minutes. Passwords must be 8–128 characters; this device stays signed in.','郵箱驗證後才可用於更改密碼。需由伺服器管理員設定 SMTP 郵件服務；郵箱不會用於登入或重設密碼。':'Verify your email before changing your password. The server administrator must configure SMTP. Email cannot be used to sign in or reset a password.'});
+
+// 2.1.6: whole-sentence translations, so long texts never end up half Chinese, half English.
+const oneWay={"AI 陪伴，也與真實好友相連。":"AI companions, connected with your real friends too.","建立 AI 新聊天或群組":"New AI chat or group","搜尋聊天":"Search chats","主要導覽":"Main navigation","位 AI · 按拼音 A–Z 排列":" AI · sorted A–Z","匯入 AI 角色":"Import AI character","聯絡人模式":"Contacts mode","搜尋名字或拼音":"Search name or pinyin","搜尋聯絡人":"Search contacts","把沐水，變成你喜歡的樣子。":"Make Mizuki the way you like it.","專屬於你的陪伴":"Your companions","模型與 API":"Model & API","條 · 統一":" messages · shared","AI 的日常":"AI daily life","由你決定":"Your choice","通知與裝置":"Notifications & device","訊息、來電、星星":"Messages, calls, Stars","備份與還原":"Backup & restore","照片與圖片生成":"Photos & image generation","已關閉":"Off","儲存空間與快取":"Storage & cache","整理":"Clean up","人類帳號與好友伺服器":"Account & friend server","讓日常更像你":"Make it yours","芋泥紫":"Taro purple","莓果奶":"Berry milk","薄荷糖":"Mint candy","蜜桃酪":"Peach cream","雲朵藍":"Cloud blue","檸檬霜":"Lemon frost","角色、對話與記憶，安心留在這部裝置。":"Characters, chats and memories stay safely on this device.","慢慢相遇，輕輕陪伴":"Meet slowly, stay gently","關於這份陪伴":"About this companion","角色、聊天、圖片與記憶存於這部裝置。解除安裝會清除資料，請定期匯出備份。":"Characters, chats, images and memories are stored on this device. Uninstalling deletes them, so export a backup regularly.","使用 AI 回覆、背景活動與記憶摘要時，相關角色設定、對話與記憶會傳送給你設定的 API 服務。聊天照片會傳給聊天模型；朋友圈圖片僅作本機展示。圖片生成會傳送固定外貌與場景設定。":"For AI replies, background activity and memory summaries, the related character settings, chats and memories are sent to the API service you set. Chat photos go to the chat model; Moments images are only shown on this device. Image generation sends the fixed appearance and scene.","API 金鑰以 Android Keystore 加密保存；JSON 備份不含金鑰。App 本身不收集遙測，也不提供雲端同步。":"API keys are encrypted on the device; JSON backups never contain keys. The app collects no telemetry.","AI 內容由模型產生，可能不準確。API 使用額度及費用由你選擇的服務商收取，ChatGPT 等訂閱方案不一定包含 API 額度。":"AI content is generated by a model and may be inaccurate. API usage is billed by the provider you choose; subscriptions such as ChatGPT don't always include API credit.","背景活動受 Android 系統排程限制；本版支援照片辨識、可選圖片生成、自動記憶摘要與裝置事件提醒。你可以發照片或純文字朋友圈。":"Background activity is limited by the system. This version supports photo recognition, optional image generation, automatic memory summaries and Star reminders. You can post photo or text Moments.","本 App 為獨立作品，介面參考常見通訊軟體的操作結構，與微信、Apple 或各 AI 服務商無隸屬關係。":"This app is an independent work. Its layout follows common messaging apps; it is not affiliated with WeChat, Apple or any AI provider.","讓日常，慢慢有了回音。":"Little by little, every day finds an echo.","我的資料":"My profile","點擊頭像更換":"Tap the photo to change it","暱稱":"Nickname","個人簽名":"Bio","更換頭像":"Change photo","選擇服務與文字模型，自動填入網址和模型名稱。所有欄位都能手動修改；修改後請儲存。":"Choose a service and text model to fill in the URL and model name. Every field can be edited; save after changing.","沐水官方服務網址":"Mizuki official service URL","只供官方帳號客服與官方 AI 使用。Claude 金鑰只設定在伺服器私密環境變數，不會放入安裝包，也不會用於其他功能。":"Used only for official support and the official AI. Its key stays on the server and is never put in the app.","API 服務":"API service","從 API 讀取全部可用模型":"Load all models from the API","預設清單不代表帳號權限或即時可用性。讀取清單需先儲存金鑰；請選擇聊天模型；照片辨識須模型支援，生圖請至「照片與圖片生成」設定。":"The default list doesn't reflect your account's access. Save a key before loading the list, pick a chat model, and set up image generation under Photos & image generation.","API 基底網址":"API base URL","模型名稱（可自訂）":"Model name (editable)","API 金鑰":"API key","金鑰由你提供，不含預付額度。":"You provide the key; no credit is included.","清除金鑰":"Clear key","Claude 使用 Messages；GPT-6 系列使用 Responses；其餘使用 OpenAI 相容聊天格式。網址請填基底路徑，不需加上 /chat/completions 或 /messages。切換服務後請填入對應金鑰。":"Claude uses Messages, GPT-6 uses Responses, others use the OpenAI-compatible chat format. Enter the base URL only (no /chat/completions or /messages). Enter the matching key after switching services.","使用其它 API 網站":"Use another API site","開啟後切換模型會保留你填寫的網址。關閉時，選擇模型會自動適配其官方基底網址。":"When on, switching models keeps your URL. When off, choosing a model sets its official base URL.","手動修改網址會開啟此選項。切換廠商仍需填入該廠商的金鑰，App 不會替你取得金鑰。":"Editing the URL turns this on. Each provider still needs its own key.","語音與通話辨識":"Voice & call recognition","設定語音辨識服務、模型與獨立金鑰。錄製的 AI 語音與 AI 電話內容會傳送至此服務；真人語音不會傳給 AI 辨識。":"Set the speech recognition service, model and key. Voice messages and AI calls are sent to it; voices of real friends are not.","https://你的伺服器":"https://your-server","貼上你的 API 金鑰":"Paste your API key","記憶條數代表每次傳送給模型的最近訊息數，含雙方訊息。完整聊天仍保留在本機。條數越多，API 用量可能越高；仍受模型的上下文上限約束。":"Memory size is how many recent messages are sent to the model each time. Full chats stay on this device. More messages may cost more API usage and are still limited by the model's context.","全部 AI 相同記憶條數":"Same memory size for every AI","開啟套用共同條數；關閉使用各角色的設定。":"On: one shared size. Off: each character's own size.","共同記憶 · ":"Shared memory · ","提供 19、27、87、278 條可選；完整聊天仍保留在本機。":"Choose 19, 27, 87 or 278 messages; full chats stay on this device.","分別記憶":"Per-character memory","目前使用統一設定":"Using the shared setting","接近各自設定的訊息條數上限時會自動壓縮，合併較舊對話並保留最近訊息。偏好、早晚安習慣與稱呼會加入累積摘要；各聊天室、每位 AI 分別處理。摘要使用聊天 API，可能計費。失敗會顯示原因，下次聊天重試，原始紀錄不刪除。":"Near the memory limit, older messages are summarized and recent ones kept. Preferences, greeting habits and nicknames go into the summary, per chat and per AI. Summaries use the chat API and may cost credit. Failures are shown and retried; original messages are never deleted.","固定外貌獨立保存，每次對話與生圖均附上，不受條數裁切或摘要覆蓋。先到「分別記憶」填寫並鎖定；若尚未指定，首次聊天會由 API 依角色設定建立一次，可能補齊未寫明的細節。建立後不可更換，請在第一段聊天前確認。關閉後不再附上或自動建立固定外貌，已保存的外貌不會刪除。":"A fixed appearance is saved separately and sent with every chat and image, never trimmed or summarized. Set and lock it in Per-character memory; otherwise the first chat creates one from the character settings. When off, no fixed appearance is sent or created; saved ones are kept.","目前統一記憶為開啟狀態。可先編輯各角色，關閉統一設定並儲存後，分別條數才會生效。":"Shared memory is on. Per-character sizes take effect after you turn it off and save.","主動互動全天候、不設訊息或電話次數上限、不必等你回覆，睡覺也不會自動進入安靜時段。儲存偏好後點「開始持續陪伴」，AI 會依個性與聊天記憶自行決定行動，也可以保持安靜。":"AIs can reach out any time, with no message or call limits and without waiting for you. Save, then tap Start companionship; each AI decides what to do from its personality and memories, or stays quiet.","AI 主動傳訊息":"AI sends messages on its own","完成一次判斷後即可繼續，沒有固定 15／30 分鐘冷卻。":"No fixed cooldown between decisions.","AI 自動發朋友圈":"AI posts Moments","AI 可以發佈公開、部分角色可見或僅自己可見的朋友圈。":"AIs can post public, limited or private Moments.","AI 點讚與回覆朋友圈":"AI likes and replies to Moments","發文或留言後立即請可見 AI 回覆，不必啟動持續陪伴；另由持續陪伴判斷日常點讚與留言。會使用聊天 API 額度。":"AIs reply right after you post or comment; companionship mode also likes and comments over time. Uses chat API credit.","允許模擬電話":"Allow calls from AI","這是 App 內電話功能授權。AI 可重複來電；接聽後可持續說話，AI 以設定的合成音色回覆，直到你掛斷。語音辨識、聊天與合成服務可能各自計費；不是電信撥號。":"In-app calls only. AIs may call again; once answered, they reply in their voice until you hang up. Recognition, chat and voice services may each be billed. These are not phone calls.","虛擬轉帳與送禮":"Virtual transfers & gifts","僅 App 內顯示，無真實金流、購買或贈送。":"In-app only; no real money is involved.","持續陪伴":"Companionship","目前已停止":"Stopped","開始持續陪伴":"Start companionship","會連續向 API 判斷，可增加用量、費用與耗電；每次請求完成後才進行下一次，不同 AI 依序輪流。服務拒絕或連線失敗時才延後重試。通知欄有水滴圖標及停止按鈕；即使沒有發訊息，API 判斷仍可能計費。":"Keeps asking the API what to do, which adds usage, cost and battery drain. AIs take turns; retries wait after errors. A notification with a stop button stays visible. Decisions may be billed even when no message is sent.","允許訊息與來電通知":"Allow message & call notifications","Android 通知授權決定背景通知能否顯示。AI 語音電話需要麥克風權限；不需要電信撥號或讀取通訊錄。照片使用系統選圖，只授權你選中的檔案。背景省電、系統終止與強制停止仍可能中斷陪伴；重新進入後可再次開始。":"Notification permission controls background notifications. AI calls need the microphone. Photos use the system picker, sharing only what you choose. Battery saving or force stop may pause companionship; start it again after reopening.","位置與時間":"Location & time","讓 AI 知道我的約略位置":"Let AIs know my approximate location","開啟並授權後，位置會附在送給設定 API 的內容中；只在 App 使用中或持續陪伴運行時更新，不保存定位歷史。":"When on, your location is included with requests to your API. It updates only while the app or companionship runs; no history is kept.","授權約略位置":"Allow approximate location","裝置當地時間與時區每次請求都會更新，不需額外權限。定位為約略讀值，會標示取得時間；定位關閉、拒絕或沒有訊號時，AI 只知道時間。定位不代表天氣資料。":"Local time and time zone are sent with every request. Location is approximate and time-stamped; without it, AIs only know the time. Location is not weather data.","尚無可分享定位":"No location yet","沒有最近錯誤。":"No recent errors.","Safari 被暫停、關閉或鎖定後，無法保證持續 AI 活動或即時同步；重新開啟後會補同步。":"When the app is paused, closed or locked, AI activity and live sync may stop; they catch up when you reopen it.","聊天照片辨識":"Photo recognition in chats","在聊天室點相機可選擇最多 4 張照片，搭配文字一起傳送。可辨識的模型會依每位 AI 的個性回應；圖片將傳送到目前設定的聊天 API。":"Send up to 4 photos with text from the camera button. Models that can see images reply in character; photos go to your chat API.","目前聊天模型的照片能力":"Photo support of the current chat model","自動判斷／向 API 嘗試":"Auto / try with the API","若服務拒絕影像輸入，AI 會顯示「目前模型無法做到辨識照片，請切換模型再試。」未知的自訂模型會嘗試傳圖；若模型默默忽略圖片，請改選不支援。認證、額度與連線錯誤會另行顯示，不會偽裝成模型不支援。":"If the service rejects images, the AI says the model can't read photos. Unknown models are tried; if one silently ignores images, choose Not supported. Key, credit and connection errors are shown separately.","讓 AI 生成圖片":"Let AIs generate images","開啟後，AI 會在日常聊天中偶爾分享含有自己的想像照片。":"AIs occasionally share imagined photos of themselves in chats.","此功能必須使用可生成圖片的模型才可使用。":"Requires a model that can generate images.","聊天模型與生圖模型可以分開設定。AI 在自然聊天時自行判斷是否適合分享圖片，通常以文字互動為主，不會每句話固定呼叫生圖。沒有固定回合數、冷卻時間或隨機機率攔阻；若 AI 判斷此刻合適就可生成。圖片為 AI 想像場景，不代表真實天氣或照片。":"Chat and image models are set separately. AIs mostly chat in text and decide themselves when a picture fits. Images are imagined scenes, not real photos or weather.","圖片生成服務":"Image service","自訂相容服務":"Custom compatible service","圖片 API 基底網址":"Image API base URL","圖片模型名稱（可修改）":"Image model name (editable)","ChatGPT、Grok 與自訂服務使用 /images/generations；Gemini 使用原生 generateContent。請填實際可生圖的模型，文字聊天模型通常不能放在此欄。部分服務需另開通圖片權限。":"ChatGPT, Grok and custom services use /images/generations; Gemini uses generateContent. Enter a model that can make images; some services need image access enabled.","使用獨立圖片 API 金鑰":"Use a separate image API key","開啟後生圖只使用此裝置儲存的獨立圖片金鑰，不會自動改用聊天金鑰。":"When on, images use only the separate image key saved on this device, never the chat key.","獨立圖片 API 金鑰":"Separate image API key","清除圖片金鑰":"Clear image key","規劃場景與生成圖片可能分別計費。角色個性、固定外貌與相關對話會送到所選服務；圖片金鑰加密保存在裝置內，不會備份。":"Planning and generating may be billed separately. Personality, fixed appearance and related chat go to the chosen service. The image key is encrypted on this device and never backed up.","固定外貌可在「記憶 → 分別記憶 → 選擇 AI」查看。固定檔案與每次生成提示保持一致，但生圖模型可能出現細節偏差，無法保證每張圖的五官、髮絲或配件完全相同。":"See fixed appearances under Memory → Per-character memory. Prompts stay consistent, but image models may still vary in details.","AI 自己的圖片與邀請":"AIs' own pictures & invitations","允許 AI 自行換頭像與朋友圈背景":"Let AIs change their photo and Moments cover","需同時開啟圖片生成。AI 會依個性與聊天情境偶爾替自己生成並換上新圖片，外貌原文保持鎖定。":"Needs image generation. AIs occasionally make and use new pictures of themselves; the appearance text stays locked.","允許 AI 邀請我換圖片":"Let AIs suggest pictures for me","AI 可以提出頭像或背景圖片邀請；你預覽並確認後才會更換，也可以拒絕或自行選圖。":"AIs can suggest a profile photo or cover; nothing changes until you confirm.","這兩項預設關閉，開啟後 AI 會依個性自行決定是否換圖，使用者提出要求也不保證換圖。從聯絡人或朋友圈頭像可查看每位 AI 的朋友圈。AI 更換圖片不會改寫其固定外貌描述，但生成細節仍可能有偏差。":"Both are off by default. When on, AIs decide for themselves whether to change pictures. Changing pictures never rewrites the fixed appearance.","貼上圖片服務的 API 金鑰":"Paste the image service API key","通知與裝置設定正在載入。":"Loading notification settings.","裝置內的陪伴":"On this device","資料檔案：":"Data files: ","暫存檔案：約 ":"Temporary files: about ","聊天照片：":"Chat photos: ","重新讀取用量":"Refresh usage","清除快取":"Clear cache","清理 App 暫存、網頁快取與可重建的程式暫存。保留角色、聊天、記憶、背景、朋友圈、照片與金鑰；不會解除外貌鎖定。快取可能隨使用再次產生。":"Clears temporary files and caches that can be rebuilt. Characters, chats, memories, backgrounds, Moments, photos and keys are kept.","進一步釋放圖片空間":"Free more image space","聊天照片是正式資料，不屬於快取。此選項會刪除所有聊天室內傳送與 AI 生成的圖片，保留文字、摘要、固定外貌、頭像、背景與朋友圈。刪除後無法再檢視或辨識這些照片，建議先匯出備份。":"Chat photos are data, not cache. This deletes every photo sent or generated in chats, keeping text, summaries, appearances, profile photos, backgrounds and Moments. Export a backup first.","清理所有聊天照片":"Delete all chat photos","自動摘要減少送給模型的內容，不會刪除本機聊天，因此不等於減少裝置檔案大小。本機資料上限仍為 48 MiB。":"Summaries shorten what's sent to the model but don't delete chats, so they don't save space. The local data limit is 48 MiB.","把重要的陪伴，收好":"Keep your companions safe","匯出角色、聊天紀錄、朋友圈、圖片、記憶與已儲存設定。JSON 備份含私人對話與圖片，請保存在可信任的位置。API 金鑰不會匯出。":"Exports characters, chats, Moments, images, memories and settings. The JSON backup contains private chats and photos, so keep it somewhere safe. API keys are not exported.","匯出 JSON 備份":"Export JSON backup","從備份回到這裡":"Restore from a backup","還原會覆蓋目前裝置的全部角色、聊天、朋友圈與設定。請先匯出目前資料。還原後自動活動會關閉，現有金鑰保留；請檢查 API 服務後再開啟。":"Restoring replaces all characters, chats, Moments and settings on this device. Export first. Automatic activity is turned off after restoring; keys are kept.","選擇備份並還原":"Choose a backup and restore","馬卡龍主題":"Macaron themes","圓角、柔和陰影，還有輕盈回彈。主題可即時預覽，儲存後套用。":"Rounded corners, soft shadows and gentle bounce. Preview a theme, then save to apply.","App 背景":"App background","套用在聊天清單、聯絡人與設定。":"Used on Chats, Contacts and Settings.","選擇圖片":"Choose image","恢復預設":"Reset","聊天背景":"Chat background","套用至所有未單獨設定的聊天室。":"Used in every chat without its own background.","朋友圈背景":"Moments cover","你的朋友圈封面圖片。":"Your Moments cover image.","文字大小":"Text size","大小":"Size","即時預覽聊天與介面文字，按右上角儲存後保留；取消會恢復原來大小。":"Preview text size live; save at the top right to keep it.","字體":"Font","字體套用整個 App，選擇後按儲存。zpix 為你提供的像素字體，缺字會使用裝置字體補上。":"The font applies to the whole app; save after choosing. Missing characters use the system font.","系統字體":"System font","zpix 像素":"zpix pixel","匯入 TTF／OTF 字體":"Import TTF/OTF font","自訂字體限 8 MB，存在本機並隨 JSON 備份匯出；請使用你有權使用的字體。介面預覽：沐水，今天也有一點小小的想念。":"Custom fonts up to 8 MB are stored on this device and included in backups. Only use fonts you have the right to use.","返回聊天清單":"Back to chats","查看 AI 個人頁面":"View AI profile","與 AI 語音通話":"Voice call with AI","聊天訊息":"Chat messages","訊息附件工具":"Attachment tools","更多功能":"More","選擇表情包":"Stickers","說點什麼…":"Say something…","輸入訊息":"Message","傳送訊息":"Send","這段對話的背景":"Background for this chat","單獨設定的背景優先於全域聊天背景。":"A chat's own background overrides the global chat background.","使用全域背景":"Use global background","刪除此聊天紀錄":"Delete this chat history","分享一張 AI 日常照片":"Share an AI daily photo","此功能必須使用可生成圖片的模型才可使用。先在設定開啟並儲存，這裡選擇分享的角色。圖片會標示 AI 生成，會產生 API 費用。":"Requires an image model. Turn it on in Settings, then choose who shares here. Images are marked as AI-generated and use API credit.","讓 AI 決定自己的圖片":"Let the AI choose its own pictures","這會提供一次自主判斷機會，AI 可以不換，也可以自行決定圖片用途。需開啟生圖及自主換圖、設定可用模型並儲存，會使用 API 額度。僅更新該 AI 自己的圖片，不會改動你的圖片或固定外貌。":"Gives the AI one chance to decide whether to change its pictures. Needs image generation and self-chosen pictures turned on. Uses API credit; only the AI's own pictures change.","考慮換圖":"Consider new pictures","我們的關係":"Our relationship","關係綁定":"Relationship","尚未綁定":"Not set","模擬電話":"AI call","打給 AI 後可以持續說話，掛斷後才回覆語音辨識內容。需麥克風權限與語音辨識 API；AI 不會在通話中自動朗讀。":"Talk freely after calling; the AI replies after you hang up. Needs the microphone and a speech recognition API.","文字格式與隱藏內容說明":"Text formatting & hidden content","置頂聊天室":"Pin chat","已釘選訊息":"Pinned messages","音色與語音回覆":"Voice & voice replies","標記":"Mark","只用於你明確選擇的裝置事件提醒。":"Only for the Star reminders you choose.","打給好友":"Call friend","同步好友訊息":"Sync friend messages","傳訊息給真實好友…":"Message your friend…","角色資料":"Character","名字":"Name","個性與角色設定":"Personality & character settings","未分組":"No group","開啟後，僅在你明確允許並選擇提醒項目時，這位角色才會收到裝置事件訊息。":"When on, this character gets Star messages only for the events you allow.","儲存角色":"Save character","刪除角色與相關私聊":"Delete character and its chats","生日：尚未設定":"Birthday: not set","更換角色頭像":"Change character photo","朋友、家人、工作，或自訂分類":"Friends, family, work, or your own group","查看已移除的角色的個人頁面":"View removed character's profile","已移除的角色":"Removed roles","AI 角色 · ":"AI character · ","的日常照片":"'s daily photo","的個人頁面":"'s profile","的朋友圈":"'s Moments","刪除角色":"Delete character","封鎖・隱藏・已刪除":"Blocked · hidden · deleted","通話背景":"Call background","套用在所有通話。沒有設定時，會使用目前主題的配色。":"Used for every call. Without one, the call screen uses your theme colours.","更新密碼":"Update password","密碼長度為 8–128 個字元，更改後目前裝置保持登入。":"Passwords are 8–128 characters. This device stays signed in.","允許裝置事件提醒":"Allow Star reminders","打開沐水時提醒":"When I open Mizuki","開始充電／電量偏低時提醒":"When charging starts or battery is low","讓重要的人，留在上面。":"Keep the people who matter at the top.","聊天選單":"Chat menu","按拼音 A–Z 排列":"Sorted A–Z","官方帳號":"Official account","搜尋名字、備註或拼音":"Search name, note or pinyin","點一下，更換背景":"Tap to change the cover","收起封面":"Collapse cover","更換朋友圈背景":"Change Moments cover","查看我的個人頁面":"View my profile","查看沐水的朋友圈":"View Mizuki's Moments","讚":"Like","＋ 設定狀態":"+ Set status","分享此刻的心情":"Share how you feel","沐水幣":"Mizuki coins","收藏":"Favorites","記錄":"Records","資料與收藏保存在本機，登入好友帳號後可依伺服器設定同步。":"Data and favorites are saved on this device and sync after you sign in.","我的生日":"My birthday","尚未設定":"Not set","目前統一記憶為開啟狀態。關閉統一設定並儲存後，各角色的條數才會分別生效。":"Shared memory is on. Per-character sizes take effect after you turn it off and save.","「永遠保留外觀」可逐位 AI 開啟或關閉。開啟後沿用目前外觀描述；關閉後可重新生成或編輯，再開啟固定。":"\"Always keep appearance\" can be set per AI. On keeps the current description; off lets you regenerate or edit it.","裝置權限":"Device permissions","可依序申請相機、麥克風、通知與定位，也可分別授權。每項都由系統確認；拒絕某項不會阻止申請其他項目。照片採用系統挑選器，只需授權您選取的照片。":"Request camera, microphone, notifications and location together or one by one. The system confirms each; photos use the system picker.","依序申請可用權限":"Request available permissions","相機":"Camera","麥克風":"Microphone","精確位置":"Precise location","Android 的使用情況、通知存取與背景設定需在系統設定逐項開啟。此 iOS 建置尚無跨 App 使用情況或付款監測能力；這些項目不會顯示成已授權。":"On Android, usage access, notification access and background settings are turned on in system settings. iPhone can't monitor other apps or payments.","訊息與來電通知":"Message & call notifications","通知權限與好友背景接收集中在這裡。手機會依作業系統提供可用選項。":"Notification permission and background receiving are here. Options depend on your phone.","開啟訊息與來電通知":"Turn on message & call notifications","好友背景接收：":"Background receiving: ","使用精確定位":"Use precise location","啟用時會立即請求系統定位並讀取座標；只有另開位置分享後，座標才會送往好友伺服器或你選擇的 AI API。":"Turning this on reads your location once; it's only sent anywhere after you start location sharing.","啟用後會立即擷取一次高精度座標。座標只在你另行開啟分享時才會外傳；睡眠、網路與系統省電可能暫停後續背景更新。":"A precise location is read once. It's only shared when you start sharing; sleep and battery saving may pause updates.","星星 · 裝置事件":"Stars · device events","此功能預設關閉。開啟並選好星星後，沐水才會把你選取的事件轉成簡短訊息傳給對象；每種事件最多每小時一次。AI 事件會呼叫已設定的聊天 API，可能產生費用。只傳事件名稱與必要的 App 顯示名稱，不讀取通知、訊息、銀行或付款內容。":"Off by default. Once on and Stars are chosen, Mizuki sends them a short message for the events you pick, at most once an hour each. AI Stars use your chat API. Only the event name is shared, never notifications, messages or payments.","先在聯絡人中把 AI 或好友標記為「星星」，才能選為提醒對象。":"Mark an AI or friend as a Star in Contacts first.","開啟所有可用事件權限":"Turn on all available events","開啟其他 App 時提醒":"When I open another app","僅讀取前景 App 名稱，並按每小時限頻。":"Only the app's name is read, at most once an hour.","電量／充電狀態提醒":"Battery / charging","只在低電量、開始充電或充滿時產生事件。":"Only for low battery, charging started or fully charged.","螢幕開啟／關閉提醒":"Screen on / off","Android 背景服務運作期間偵測螢幕狀態變化。":"Detected while the Android background service runs.","長時間未使用／持續使用提醒":"Long idle / long use","亮屏達 4 小時或螢幕關閉 8 小時才提醒；電源管理仍可能延後。":"After 4 hours on screen or 8 hours off; power saving may delay it.","開啟 Android 使用情況存取權":"Open Android usage access","允許背景活動不受電池最佳化限制":"Allow background activity (no battery optimization)","接收對象":"Recipients","iPhone 只在沐水開著或剛切到背景時偵測得到。":"iPhone can only detect this while Mizuki is open or just moved to the background.","每小時最多一次。":"At most once an hour.","需要沐水正在執行；關閉 App 後 iOS 不會通知沐水。":"Mizuki must be running; iOS doesn't notify a closed app.","其它功能":"More","後台持續運行支援":"Background running","拍照與訊息格式":"Camera & message format","裝置":"Device","預設瀏覽器":"Default browser","聊天室內訊息與媒體的顯示方式。":"How messages and media appear in chats.","拍照":"Camera","拍照後自動保存到裝置":"Save photos to the device","拍攝後仍會先加入待傳照片；開啟時另外保存一份到相簿或裝置照片資料夾。是否傳送仍由你按下傳送決定。":"Photos are added to your draft; when on, a copy is also saved to your photo library. Nothing is sent until you tap Send.","訊息格式":"Message format","設定聊天室文字、隱藏內容與引用格式的說明。":"How text, hidden content and quotes are formatted in chats.","帳號安全設定由你登入的好友伺服器保存。請勿與他人共用密碼。":"Account security is kept by your friend server. Never share your password.","更改密碼":"Change password","目前密碼":"Current password","新密碼":"New password","確認新密碼":"Confirm new password","提示音":"Sounds","通知與通話提示音":"Notification & call sounds","清理 App 暫存，並永久移除聊天室中的圖片與影片資料以釋放空間；所有文字訊息、":"Clears temporary files and permanently removes chat images and videos to free space; all text messages, ","清除快取與聊天媒體":"Clear cache & chat media","自動摘要不會刪除本機文字聊天。本機資料上限仍為 48 MiB。":"Summaries never delete text chats. The local data limit is 48 MiB.","選擇啟動畫面與 App 內顯示的名稱；預設跟隨系統語言。":"The name shown on the start screen and in the app; follows the system language by default.","跟隨系統":"Follow system","使用說明":"Help","手機版使用說明":"Using Mizuki on your phone","權限與背景執行方式會依裝置和作業系統版本不同。":"Permissions and background behaviour depend on your device and system version.","聊天設定":"Chat settings"," 條":" messages"," 張":"","資料與帳號":"Data & account"};Object.assign(dict,oneWay);
+// Additional English UI coverage (3.0.0 localization fix).
+Object.assign(dict, {
+  "訊息": "Messages",
+  "星星": "Stars",
+  "星星好友": "Starred friends",
+  "關係": "Relationship",
+  "婉拒": "Decline",
+  "已婉拒": "Declined",
+  "接受": "Accept",
+  "朋友": "Friends",
+  "家人": "Family",
+  "工作": "Work",
+  "自訂": "Custom",
+  "帳號": "Account",
+  "照片": "Photos",
+  "顯示名稱": "Display name",
+  "服務": "Service",
+  "狀態": "Status",
+  "官方": "Official",
+  "官方帳號": "Official account",
+  "沐水官方帳號": "Mizuki official account",
+  "水沐 · 官方帳號": "Mizuki · Official account",
+  "登入裝置": "Signed-in devices",
+  "設定狀態": "Set status",
+  "我的狀態": "My status",
+  "搜尋": "Search",
+  "發訊息": "Send message",
+  "點讚": "Like",
+  "按讚": "Like",
+  "取消讚": "Unlike",
+  "已讚": "Liked",
+  "封鎖名單": "Blocked users",
+  "封鎖": "Block",
+  "查看": "View",
+  "收起": "Collapse",
+  "顯示": "Show",
+  "隱藏": "Hide",
+  "還原": "Restore",
+  "照片預覽": "Photo preview",
+  "加入待傳": "Add to draft",
+  "待傳照片": "Photo attachments",
+  "重拍": "Retake",
+  "捨棄": "Discard",
+  "保存照片": "Save photo",
+  "照片已保存": "Photo saved",
+  "操作失敗": "Operation failed",
+  "已刷新": "Refreshed",
+  "正在刷新…": "Refreshing…",
+  "刷新失敗，請重試": "Refresh failed. Try again.",
+  "下拉刷新": "Pull to refresh",
+  "確認刪除": "Confirm deletion",
+  "新增分組": "Add group",
+  "未分組": "Ungrouped",
+  "平板": "Tablet",
+  "手機": "Phone",
+  "電腦": "Computer",
+  "設備": "Device",
+  "所有人": "Everyone",
+  "在線": "Online",
+  "休閒": "Available",
+  "請勿打擾": "Do not disturb",
+  "忙碌": "Busy",
+  "離線": "Offline",
+  "自定義": "Custom",
+  "休息中": "Away",
+  "小時": "hours",
+  "分鐘前": "minutes ago",
+  "剛剛": "Just now",
+  "昨天": "Yesterday",
+  "明天": "Tomorrow",
+  "天前": "days ago",
+  "則訊息": "messages",
+  "訊息數": "Message count",
+  "條": "items",
+  "張": "photos",
+  "人": "people",
+  "已設定": "Configured",
+  "尚未建立": "Not created",
+  "留白不變更": "Leave blank to keep current",
+  "暫無資料": "No data yet",
+  "對方正在輸入中…": "Typing…",
+  "第一句，從你開始": "Your first message starts here",
+  "等一個，想聊的人": "Find someone to talk to",
+  "帶著名字與個性，來到沐水。": "Bring a character to Mizuki.",
+  "從一份角色檔案，開始你們的故事。": "Start your story with a character profile.",
+  "角色已在聯絡人等你。": "Your characters are waiting in Contacts.",
+  "點右上角「＋」選擇一位或多位 AI。": "Tap + at the top to choose one or more AI characters.",
+  "開啟新聊天": "Start a new chat",
+  "支援 .JSON / .TXT 角色檔": "Supports .JSON / .TXT character files",
+  "每一段對話，都有溫度。": "Every conversation is personal.",
+  "在這裡，遇見你的日常陪伴。": "Find your everyday companions here.",
+  "輕輕說聲你好吧": "Say hello",
+  "朋友圈封面": "Moments cover",
+  "刪除朋友圈": "Delete Moment",
+  "把日常，留在這裡": "Share your everyday moments",
+  "一張照片，或一點心情。": "A photo or a thought.",
+  "點右上角相機，分享第一則朋友圈。": "Tap the camera above to share your first Moment.",
+  "這位 AI 還沒有發朋友圈。": "This AI has not posted a Moment yet.",
+  "查看 AI 朋友圈背景": "View AI Moments cover",
+  "與這位 AI 聊天": "Chat with this AI",
+  "好友目前位置": "Friend’s current location",
+  "查看我的個人頁面": "View my profile",
+  "個性與角色設定": "Personality and character settings",
+  "角色資料": "Character profile",
+  "自訂 AI": "Custom AI",
+  "外觀固定": "Appearance locked",
+  "可重新生成": "Can be regenerated",
+  "依個性重新生成外觀": "Regenerate appearance from personality",
+  "使用 API 產生摘要": "Summarize with API",
+  "已移除的角色": "Removed characters",
+  "角色 · ": "Character · ",
+  "送你一份虛擬禮物。": "Sent you a virtual gift.",
+  "送你一個虛擬沐水紅包。": "Sent you a virtual red packet.",
+  "給你一筆虛擬沐水幣。": "Sent you virtual Mizuki coins.",
+  "拍了拍": "Nudged",
+  "新訊息": "New messages",
+  "正在連線…": "Connecting…",
+  "正在連線": "Connecting",
+  "請先設定 API 金鑰": "Set your API key first",
+  "正在傳送": "Sending",
+  "已接收": "Received",
+  "已傳送": "Sent",
+  "已讀": "Read",
+  "群組名稱（選填）": "Group name (optional)",
+  "位成員 · AI 群聊": " members · AI group",
+  "對話僅儲存於此裝置 · ": "Chat saved on this device · ",
+  "重新嘗試這位 AI 的回覆": "Retry this AI response",
+  "搜尋聊天記錄": "Search chat history",
+  "隱藏的聊天室": "Hidden chats",
+  "音效板": "Soundboard",
+  "音效板與好友分享": "Soundboard and sharing",
+  "上傳音效": "Upload sound",
+  "好友分享": "Shared by friends",
+  "選擇好友": "Choose a friend",
+  "音檔限 32 MB": "Audio file limit: 32 MB",
+  "音效長度需為 0.1–60 秒": "Sound must be 0.1–60 seconds long",
+  "好友分享的音效": "Sounds shared by friends",
+  "已下載到本機音效板": "Saved to your soundboard",
+  "語音、攝影機與設備": "Voice, camera, and devices",
+  "靜音麥克風": "Mute microphone",
+  "對方分享的畫面": "Shared screen",
+  "對方的攝影機": "Their camera",
+  "自己的攝影機": "My camera",
+  "正在分享的畫面": "Screen being shared",
+  "全螢幕": "Full screen",
+  "小窗觀看": "Picture in picture",
+  "相機權限": "Camera permission",
+  "需要相機權限": "Camera permission required",
+  "正在錄製": "Recording",
+  "請先結束目前的錄音或通話": "End the current recording or call first",
+  "背景": "Background",
+  "目前運行中": "Running",
+  "目前已停止": "Stopped",
+  "模擬來電": "Test incoming call",
+  "主動傳訊息": "Proactive messages",
+  "自動發朋友圈": "Automatic Moments posts",
+  "誰可以看見": "Who can see this",
+  "所有人可見": "Visible to everyone",
+  "部分可見 · ": "Visible to selected people · ",
+  "僅自己可見": "Only me",
+  "好友伺服器": "Friend server",
+  "帳號同步": "Account sync",
+  "帳號同步與恢復": "Account sync and recovery",
+  "請先前往設定進行登入": "Sign in from Settings first",
+  "裝置": "Device",
+  "金鑰": "API key",
+  "基底網址": "Base URL",
+  "清除快取": "Clear cache",
+  "最近錯誤：": "Latest error: ",
+  "已加密儲存，留空保持原金鑰": "Encrypted and saved. Leave blank to keep the current key.",
+  "模型支援照片辨識": "Model supports image recognition",
+  "模型不支援照片辨識": "Model does not support image recognition",
+  "已開啟": "On",
+  "已關閉": "Off",
+  "暫停": "Pause",
+  "繼續": "Resume",
+  "登出此裝置": "Sign out of this device",
+  "支付與服務": "Payments and services",
+  "設定已更新": "Settings updated",
+  "請輸入狀態文字": "Enter a status message",
+  "狀態已更新": "Status updated",
+  "自己寫一句狀態": "Write your status",
+  "自定義狀態": "Custom status",
+  "請輸入自定義狀態文字": "Enter a custom status",
+  "線上狀態：": "Online status: ",
+  "關閉程式時": "When closing the app",
+  "更換頭像": "Change avatar",
+  "編輯資料": "Edit profile",
+  "今日": "Today",
+  "一週內": "Within a week",
+  "所有": "All",
+  "稍後": "Later",
+  "重設": "Reset",
+  "上一步": "Previous",
+  "下一步": "Next",
+  "正在處理…": "Processing…",
+  "操作逾時，請檢查網路後重試": "Request timed out. Check your connection and try again.",
+  "找不到此功能": "This feature is unavailable",
+  "使用 Messages；GPT-6 系列使用 Responses；其餘使用 OpenAI 相容聊天格式。網址請填基底路徑，不需加上 /chat/completions 或 /messages": "Use Messages for the relevant provider and Responses for GPT-6 models; other models use the OpenAI-compatible chat format. Enter the base URL, not /chat/completions or /messages.",
+  "另保留 80 條，對應你常用的記憶長度。": "Keep 80 more entries to match your usual memory size.",
+  "長期記憶摘要可在「分別記憶」編輯或產生。產生摘要會將相關聊天與角色內容傳送至目前設定的 API。": "Edit or generate long-term memory summaries under Individual memory. Generating a summary sends the relevant chat and character data to your configured API.",
+  "先匯入 AI，才能設定分別記憶。": "Import an AI character before setting individual memory.",
+  "金鑰以 Android Keystore 加密保存；JSON 備份不含金鑰。App 本身不收集遙測，也不提供雲端同步。": "API keys are encrypted with Android Keystore and excluded from JSON backups. The app does not collect telemetry or provide built-in cloud sync.",
+  "內容由模型產生，可能不準確。API 使用額度及費用由你選擇的服務商收取，ChatGPT 等訂閱方案不一定包含 API 額度。": "Model-generated content may be inaccurate. API costs depend on your provider; subscriptions such as ChatGPT may not include API credits.",
+  "先匯入 AI": "Import an AI character first",
+  "選擇一位或多位 AI": "Choose one or more AI characters",
+  "無法傳送訊息": "Cannot send message",
+  "這個聊天室中的 AI 已在封鎖名單，無法傳送訊息": "An AI in this chat is blocked, so messages cannot be sent.",
+  "服務拒絕認證。請在這台裝置的「設定 → API」確認 API 金鑰、服務網址與模型；API 金鑰不會隨帳號同步。": "Authentication failed. Check the API key, service URL, and model in Settings → API on this device. API keys are not synced across devices.",
+  "隱藏文字，點一下揭開": "Hidden text. Tap to reveal.",
+  "已揭開文字，點一下隱藏": "Revealed text. Tap to hide.",
+  "最多四個附件": "Up to four attachments",
+  "剛拍的照片": "Photo just taken",
+  "照相": "Take photo",
+  "拍照與訊息格式": "Camera and message formatting",
+  "照片與圖片生成": "Photos and image generation",
+  "沐水拍攝照片.jpg": "Mizuki-photo.jpg",
+  "自己的圖片與邀請": "Your images and invitations",
+  "每小時最多一次。": "At most once per hour.",
+  "圖片已加入待傳": "Image added to draft",
+  "新增圖片": "Add image",
+  "更換背景": "Change background",
+  "語言 / Language": "Language",
+  "預設跟隨裝置系統語言。選擇 English 或繁體中文可固定此 App 的介面語言。": "Uses your device language by default. Choose English or Traditional Chinese to override it.",
+  "每個語言都以自己的語言顯示，例如 English 永遠顯示 English。": "Each language is shown in its own language (for example, English is always English)."
+});
+
+// Supplemental coverage for UI labels and long-form help.
+for(const [zh,en] of Object.entries({
+  "我的": "My",
+  "群組": "Groups",
+  "預覽": "Preview",
+  "直接": "Direct",
+  "同步": "Sync",
+  "幫助": "Help",
+  "拍一拍": "Nudge",
+  "音量": "Volume",
+  "回覆": "Reply",
+  "名稱": "Name",
+  "解除": "Unlink",
+  "辨識": "Recognition",
+  "備註": "Note",
+  "伺服器網址": "Server URL",
+  "登入資訊": "Sign-in information",
+  "同意": "Agree",
+  "分組": "Groups",
+  "下載": "Download",
+  "播放": "Play",
+  "回覆中": "Replying",
+  "正在載入較早訊息…": "Loading older messages…",
+  "正在載入較早…": "Loading earlier…",
+  "新朋友": "New friends",
+  "聯絡人分組": "Contact groups",
+  "沒有符合的好友。": "No matching friends.",
+  "沒有符合的聊天。": "No matching chats.",
+  "沒有符合的。": "No matches.",
+  "尚未發布。": "Not published yet.",
+  "還沒有發布。": "Nothing published yet.",
+  "正在等待對方回覆": "Waiting for a reply",
+  "等待對方回覆": "Waiting for a reply",
+  "重新驗證": "Verify again",
+  "音量設定": "Volume settings",
+  "揚聲器／耳機": "Speaker / headphones",
+  "攝影機": "Camera",
+  "接收音量": "Incoming volume",
+  "分享畫面": "Share screen",
+  "分享電腦聲音": "Share computer audio",
+  "同時分享聲音": "Share audio too",
+  "聲音包含整台電腦播放的聲音，即使只分享一個視窗。": "Audio sharing includes all sounds from your computer, even when sharing only one window.",
+  "重新嘗試": "Retry",
+  "失敗": "Failed",
+  "成功": "Successful",
+  "完成設定": "Finish setup",
+  "我的資料": "My profile",
+  "個人資訊": "Personal information",
+  "使用者": "User",
+  "資料": "Data",
+  "安全": "Security",
+  "與權限　›": " and permissions ›",
+  "權限": "Permissions",
+  "應用程式": "App",
+  "目前沒有給你的音效。": "No sounds have been shared with you yet.",
+  "還沒有音效，先上傳一段。": "No sounds yet. Upload one to get started.",
+  "還沒有音效，試著上傳一段。": "No sounds yet. Try uploading one.",
+  "下載到本機": "Save to this device",
+  "下載檔案": "Download file",
+  "好友分享的音效": "Sounds shared by friends",
+  "音檔": "Audio file",
+  "音量平衡": "Volume normalization",
+  "已送出，等待對方收取": "Sent. Waiting for the recipient to claim it.",
+  "暫時不用": "Not now",
+  "再想想": "Maybe later",
+  "預覽並使用": "Preview and use",
+  "自己選圖": "Choose your own image",
+  "自訂圖片": "Custom image",
+  "發出": "Send",
+  "申請": "Request",
+  "邀請已送出": "Invitation sent",
+  "尚未回覆": "No reply yet",
+  "查看申請": "View requests",
+  "關係已解除": "Relationship ended",
+  "相處約定（選填）": "Relationship agreements (optional)",
+  "你 AI 的…（選填）": "AI’s relationship to you (optional)",
+  "我怎麼稱呼 AI（選填）": "What I call this AI (optional)",
+  "AI 怎麼稱呼我（選填）": "What this AI calls me (optional)",
+  "名稱（自訂類型時填）": "Name (for custom type)",
+  "解除綁定": "Unlink relationship",
+  "（每年）": "(every year)",
+  "清除日期": "Clear date",
+  "出期": "Release date",
+  "更改關係": "Change relationship",
+  "生日或紀念日": "Birthday or anniversary",
+  "每個月": "Every month",
+  "每一年": "Every year",
+  "直接輸入，不必逐年尋找。生日為選填，只會在當天顯示蛋糕、帽子與氣球。": "Enter the date directly. Birthdays are optional; cake, hats, and balloons only appear on the day.",
+  "可輸入 2000-02-29 或 20000229。2 月 29 日只會在閏年當天觸發。": "Enter 2000-02-29 or 20000229. February 29 only triggers in leap years.",
+  "未填彼此身分時，會以關係名稱作為相處依據。": "If no roles are specified, the relationship name is used.",
+  "「子女」表示 AI 是你的孩子；「家長」則相反。不預設年齡。只影響 App 內互動，AI 的實際回應仍可能偏離提示。": "Child means the AI is your child; Parent means the opposite. No age is assumed. This affects in-app interaction only, and AI responses may differ.",
+  "關係名稱": "Relationship name",
+  "聊天室": "Chat",
+  "釘選": "Pin",
+  "取消釘選": "Unpin",
+  "釘選聊天室": "Pin chat",
+  "釘選訊息": "Pin message",
+  "複製": "Copy",
+  "複製文字": "Copy text",
+  "重新傳送": "Resend",
+  "收回": "Unsend",
+  "刪除訊息": "Delete message",
+  "轉發": "Forward",
+  "引用": "Quote",
+  "文字格式與隱藏內容": "Text formatting and hidden content",
+  "隱藏內容": "Hidden content",
+  "全部已讀": "Mark all as read",
+  "編輯訊息": "Edit message",
+  "訊息詳情": "Message details",
+  "長按或右鍵開啟這份選單。": "Long-press or right-click for this menu.",
+  "這個聊天室還沒有釘選訊息。": "No pinned messages in this chat.",
+  "聊天室內尚無訊息": "No messages in this chat.",
+  "傳送失敗": "Failed to send",
+  "點一下": "Tap",
+  "引用訊息": "Quoted message",
+  "再試一次": "Try again",
+  "打聲招呼，或傳一張照片，開始你們的故事。": "Say hello or send a photo to start your story.",
+  "打聲招呼，你們的故事就開始了。": "Say hello to start your story.",
+  "將傳送給": "Will be sent to",
+  "選擇對象": "Choose recipients",
+  "誰能看見": "Who can see",
+  "公開分享": "Share publicly",
+  "直接訊息": "Direct message",
+  "拍照後先預覽；按「加入待傳」才放入輸入框，最後仍需按傳送。": "Preview the photo first. Tap Add to draft, then Send when ready.",
+  "照片尚未送出。": "Photo not sent yet.",
+  "這張照片仍在待傳清單，尚未送出。": "This photo is in your draft and has not been sent.",
+  "保存到相簿、直接傳送，或先加入輸入框。": "Save to Photos, send immediately, or add it to your draft.",
+  "分享畫面可能包含密碼與私人資料。選取後才會開始。": "Screen sharing may reveal passwords or personal data. It starts only after selection.",
+  "選擇後按播放，會加入到進行中的真實通話。聲音會傳給通話對方，也會在本機播放。": "Play a selected sound during an active call. Both you and the other person will hear it.",
+  "上傳後可試聽；真實好友點播放，對方也會聽到。": "Upload and preview sounds; when played during a call, the other person can hear them.",
+  "一鍵同步音效給選定好友": "Sync sounds to selected friends",
+  "你目前沒有音效，試著上傳一段。": "You have no sounds yet. Try uploading one.",
+  "下載直接在 App 內進行，不會跳到瀏覽器。": "Downloads stay inside the app and do not open a browser.",
+  "伺服器音效與分享": "Server sounds and sharing",
+  "還沒有好友分享。請在你的音效板同步。": "No shared sounds yet. Sync some from your soundboard.",
+  "下載至音效板": "Download to soundboard",
+  "日常如何發生": "How daily activity works",
+  "最多 9 張，會在裝置內縮圖。內容只保存在本機。": "Up to 9 photos are resized on the device. Content stays on this device.",
+  "以模型生成內容": "Generate content with AI",
+  "自行設定": "Configure manually",
+  "自動": "Automatic",
+  "手動": "Manual",
+  "關閉後需要重新開啟": "Turn it back on when needed",
+  "全部內容": "All content",
+  "角色檔": "Character file",
+  "建立角色": "Create character",
+  "儲存變更": "Save changes",
+  "重新生成": "Regenerate",
+  "建立新角色": "Create new character",
+  "導入角色": "Import character",
+  "選擇一份 JSON 或 TXT。檔名會成為 AI 的名字，檔案內容描述個性。匯入後可在聯絡人編輯角色。": "Choose a JSON or TXT file. Its filename becomes the AI’s name, and the contents describe their personality. You can edit the character in Contacts after importing.",
+  "設定儲存成功": "Settings saved",
+  "資料已保存": "Data saved",
+  "生成的想像 · 外貌細節可能有偏差": "AI-generated appearance · details may vary",
+  "固定文字可保證原文不變；生成的圖像仍可能有細節偏差。": "The saved description remains unchanged, but generated images may vary in details.",
+  "每個聊天室自動累積": "Accumulate automatically in each chat",
+  "已完成設定": "Setup complete",
+  "使用 API 進行圖片辨識": "Analyze photos using API",
+  "模型支援圖片": "Model supports images",
+  "模型不支援圖片": "Model does not support images",
+  "文件": "Files",
+  "參數": "Parameters",
+  "供應商": "Provider",
+  "自訂端點": "Custom endpoint",
+  "編輯內容": "Edit content",
+  "生成摘要": "Generate summary",
+  "通話設定": "Call settings",
+  "麥克風與聲音": "Microphone and audio",
+  "模型與 API": "Model and API",
+  "AI 的日常": "AI activity",
+  "外觀": "Appearance",
+  "音色": "Voice",
+  "話筒": "Microphone",
+  "預設": "Default",
+  "類型": "Type",
+  "語言設定": "Language settings",
+  "應用語言": "App language",
+  "修改語言": "Change language"
+})) if(!Object.prototype.hasOwnProperty.call(dict,zh))dict[zh]=en;
+
+// Source-aware translation. Never reverse-translate arbitrary English: many English
+// words share translations and would overwrite names, messages and UI labels.
+const keys=Object.keys(dict).sort((a,b)=>b.length-a.length);
+const exactText={'我':'Me'};
+const nativeText=new WeakMap();
+const nativeAttrs=new WeakMap();
+const excluded='script,style,textarea,[contenteditable="true"],[data-ui-language],.bubble,.message-list,.message-body,.moment-text,.comments,.moment-main > h3,.moment-profile,.moment-author,.comment-profile-name,.profile-name-button,.contact-row,.person-name,.profile-card,.voice-player,.avatar,[data-i18n-ignore]';
+const uiAttrs=['placeholder','aria-label','title'];
+const chinese=/[\u2E80-\u9FFF\uFF00-\uFFEF]/;
+function english(){
+  const choice=state?.settings?.uiLanguage||'system';
+  return choice==='en'||(choice==='system'&&/^en(?:-|$)/i.test(navigator.language||''));
+}
+function mapText(text,toEnglish){
+  if(!toEnglish||!chinese.test(text))return text;
+  const trim=text.trim();
+  if(exactText[trim])return text.replace(trim,exactText[trim]);
+  if(Object.prototype.hasOwnProperty.call(dict,trim))return text.replace(trim,dict[trim]);
+  // Longest match first, to prioritize complete sentences over smaller words.
+  // This only runs on UI text, never on user-written bubbles or chat previews.
+  for(const from of keys)if(text.includes(from))text=text.split(from).join(dict[from]);
+  return text;
+}
+function isExcluded(node){const el=node.parentElement;if(!el)return false;return !!el.closest(excluded)||!!el.closest('select[data-mizukilang],select[data-mizukiappname]')||(!!el.closest('.chat-info')&&!el.closest('time'));}
+function translateTextNode(node,en){
+  if(isExcluded(node))return;
+  const current=node.nodeValue;
+  const saved=nativeText.get(node);
+  const source=saved&&current===saved.output?saved.source:current;
+  const output=mapText(source,en);
+  nativeText.set(node,{source,output});
+  if(current!==output)node.nodeValue=output;
+}
+function translateAttributes(el,en){
+  if(el.closest(excluded)&&!el.matches('input,textarea'))return;
+  let store=nativeAttrs.get(el);
+  if(!store){store={};nativeAttrs.set(el,store);}
+  for(const attr of uiAttrs){
+    if(!el.hasAttribute(attr))continue;
+    const current=el.getAttribute(attr),saved=store[attr];
+    const source=saved&&current===saved.output?saved.source:current;
+    const output=mapText(source,en);
+    store[attr]={source,output};
+    if(current!==output)el.setAttribute(attr,output);
+  }
+}
+function refreshLocale(){
+  const en=english();
+  window.MushuiLocale=en?'en':'zh-Hant';
+  document.documentElement.lang=window.MushuiLocale;
+  const preference=state?.settings?.appDisplayName||'system';
+  const name=window.MizukiStaffEdition?'水沐':preference==='mizuki'?'Mizuki':preference==='mushui'?'沐水':en?'Mizuki':'沐水';
+  if(document.title!==name)document.title=name;
+  document.querySelector('meta[name=apple-mobile-web-app-title]')?.setAttribute('content',name);
+  return en;
+}
+window.MushuiLocale=english()?'en':'zh-Hant';
+function translate(rootNode=document.body){
+  if(!rootNode)return;
+  const en=refreshLocale();
+  if(rootNode.nodeType===Node.TEXT_NODE){translateTextNode(rootNode,en);return;}
+  if(rootNode.nodeType!==Node.ELEMENT_NODE&&rootNode.nodeType!==Node.DOCUMENT_NODE)return;
+  if(rootNode.nodeType===Node.ELEMENT_NODE)translateAttributes(rootNode,en);
+  const walker=document.createTreeWalker(rootNode,NodeFilter.SHOW_TEXT,{
+    acceptNode(node){return isExcluded(node)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT;}
+  });
+  let node;
+  while((node=walker.nextNode()))translateTextNode(node,en);
+  for(const el of rootNode.querySelectorAll('[placeholder],[aria-label],[title]'))translateAttributes(el,en);
+}
+
+const base=settingsView;settingsView=function(){return base()+`<div class="content"><div class="section-label">語言 / Language</div><div class="card"><p class="help">預設跟隨裝置系統語言。選擇 English 或繁體中文可固定此 App 的介面語言。</p><div class="choice-list">${[['system',english()?'Follow system':'跟隨系統'],['zh',english()?'Traditional Chinese':'繁體中文'],['en','English']].map(([id,label])=>`<button class="setting-choice ${((state.settings.uiLanguage||'system')===(id==='zh'?'zh-Hant':id))?'selected':''}" data-ui-language="${id}">${label}</button>`).join('')}</div></div></div>`;};
+
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-ui-language]');if(!b)return;const value=b.dataset.uiLanguage==='zh'?'zh-Hant':b.dataset.uiLanguage;await WebEngine.edit(s=>{s.settings.uiLanguage=value;});state=await WebEngine.read();draft=structuredClone(state.settings);render();});
+
+const originalRender=render;
+render=function(){refreshLocale();originalRender();translate();};
+window.mizukiTranslate=translate;
+window.mizukiTranslateText=text=>mapText(text,english());
+window.MizukiI18n={translate,translateText:mapText,refreshLocale};
+
+// Keep content inserted outside render() localized before the next paint.
+// Processing only mutated nodes also avoids repeatedly rewriting the entire UI.
+const observedRoots=['app','overlay','toast'];
+for(const id of observedRoots){
+  const root=document.getElementById(id);
+  if(!root)continue;
+  new MutationObserver(records=>{
+    const dirty=new Set();
+    for(const record of records){
+      if(record.type==='characterData')dirty.add(record.target);
+      else if(record.type==='attributes')dirty.add(record.target);
+      else for(const added of record.addedNodes)dirty.add(added);
+    }
+    for(const node of dirty)if(node.isConnected)translate(node);
+  }).observe(root,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:uiAttrs});
+}
+
+if(window.WebEngine){const complete=WebEngine.complete;WebEngine.complete=async(st,system,messages)=>complete(st,window.MushuiLocale==='en'?system+'\nThe app interface is in English. Reply in natural English unless the user explicitly writes in another language or asks for another language. Keep each chat bubble short, usually one sentence.':system,messages);}
+
+translate();
+
+})();
+
