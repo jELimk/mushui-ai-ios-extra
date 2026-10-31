@@ -1,0 +1,73 @@
+name: Mushui170
+options:
+  deploymentTarget:
+    iOS: '16.4'
+packages:
+  WebRTC:
+    url: https://github.com/stasel/WebRTC.git
+    exactVersion: 156.0.0
+targets:
+  Mushui170:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+      - path: www
+        type: folder
+        buildPhase: resources
+      - path: Assets.xcassets
+      - path: AltIcons
+        buildPhase: resources
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: 沐水
+        CFBundleShortVersionString: 2.0.6
+        CFBundleVersion: '206'
+        UILaunchScreen: {}
+        CFBundleIcons:
+          CFBundleAlternateIcons:
+            lilac:
+              CFBundleIconFiles: [Icon-lilac]
+            rose:
+              CFBundleIconFiles: [Icon-rose]
+            mint:
+              CFBundleIconFiles: [Icon-mint]
+            peach:
+              CFBundleIconFiles: [Icon-peach]
+            blue:
+              CFBundleIconFiles: [Icon-blue]
+            lemon:
+              CFBundleIconFiles: [Icon-lemon]
+        CFBundleIcons~ipad:
+          CFBundleAlternateIcons:
+            lilac:
+              CFBundleIconFiles: [Icon-lilac]
+            rose:
+              CFBundleIconFiles: [Icon-rose]
+            mint:
+              CFBundleIconFiles: [Icon-mint]
+            peach:
+              CFBundleIconFiles: [Icon-peach]
+            blue:
+              CFBundleIconFiles: [Icon-blue]
+            lemon:
+              CFBundleIconFiles: [Icon-lemon]
+        NSMicrophoneUsageDescription: 用於你啟動的語音訊息與通話。
+        NSCameraUsageDescription: 用於你選擇的系統拍照與視訊通話。
+        NSPhotoLibraryAddUsageDescription: 用於將你選擇保存的照片加入相簿。
+        NSLocationWhenInUseUsageDescription: 在你允許時分享約略位置。
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+          NSAllowsArbitraryLoadsInWebContent: true
+        UIBackgroundModes: [audio]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.mushui.personal
+        SWIFT_VERSION: '5.0'
+        TARGETED_DEVICE_FAMILY: '1,2'
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - package: WebRTC
