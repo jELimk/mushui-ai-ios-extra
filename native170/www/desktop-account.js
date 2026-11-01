@@ -1,0 +1,86 @@
+ 'use strict';
+
+window.AccountCloud={busy:false,remote:null,revision:0,owner:'',key:null,error:'',last:0,remoteAvailable:false,phase:'idle'};
+
+{const W=WebEngine,C=AccountCloud,collections=['ais','chats','moments'],skip=new Set(['desktopAudio','desktopNotifications','hasKey','hasImageKey','voiceHasKey','uiLanguage','appDisplayName']);
+
+const copy=v=>structuredClone(v),json=v=>JSON.stringify(v,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
+
+function base(s){return {schema:1,ais:copy(s.ais),chats:copy(s.chats),moments:copy(s.moments),settings:Object.fromEntries(Object.entries(s.settings).filter(([k])=>!skip.has(k))),syncMeta:copy(s.syncMeta||{records:{},settings:{},deleted:{}})};}
+
+function stamp(before,s){let changed=false;const prev=base(before),next=base(s),m=s.syncMeta||={records:{},settings:{},deleted:{}},now=Date.now();for(const list of collections){for(const r of next[list])if(json(r)!==json(prev[list].find(v=>v.id===r.id))){m.records[list+'/'+r.id]=now;changed=true;}for(const r of prev[list])if(!next[list].some(v=>v.id===r.id)){m.deleted[list+'/'+r.id]=now;changed=true;}}for(const k of Object.keys(next.settings))if(json(prev.settings[k])!==json(next.settings[k])){m.settings[k]=now;changed=true;}return changed;}
+
+C.localVersion=0;let pushTimer;
+
+function publish(){window.dispatchEvent(new Event('mushui-account-updated'));}
+
+function queueSync(){if(window.DesktopDetached)return;clearTimeout(pushTimer);pushTimer=setTimeout(()=>W.accountSync().catch(()=>{}),120);}
+
+const edit=W.edit;W.edit=async fn=>{let changed=false;const result=await edit(async s=>{const before=copy(s);const result=await fn(s);changed=stamp(before,s);return result;});if(changed){C.localVersion++;queueSync();}return result;};
+
+function merge(a,b){if(!b)return copy(a);if(!a)return copy(b);let out={schema:1,settings:{},syncMeta:{records:{},settings:{},deleted:{}}},am=a.syncMeta||{},bm=b.syncMeta||{};
+
+ for(const group of ['records','settings','deleted'])for(const k of new Set([...Object.keys(am[group]||{}),...Object.keys(bm[group]||{})]))out.syncMeta[group][k]=Math.max(am[group]?.[k]||0,bm[group]?.[k]||0);
+
+ for(const k of new Set([...Object.keys(a.settings||{}),...Object.keys(b.settings||{})]))out.settings[k]=copy((bm.settings?.[k]||0)>(am.settings?.[k]||0)?b.settings[k]:a.settings[k]===undefined?b.settings[k]:a.settings[k]);
+
+ for(const list of collections){out[list]=[];for(const id of new Set([...(a[list]||[]).map(x=>x.id),...(b[list]||[]).map(x=>x.id)])){const x=a[list]?.find(v=>v.id===id),y=b[list]?.find(v=>v.id===id),key=list+'/'+id,updated=out.syncMeta.records[key]||0;if(out.syncMeta.deleted[key]&&out.syncMeta.deleted[key]>=updated)continue;const newer=(bm.records?.[key]||0)>(am.records?.[key]||0)?y:x,v=copy(newer||x||y);if(x&&y&&list==='chats'){const older=newer===x?y:x;const messages=new Map();for(const m of [...older.messages,...newer.messages]){const prior=messages.get(m.id);if(!prior||(m.editedAt||0)>=(prior.editedAt||0))messages.set(m.id,m);}const pins={...older.messagePins};for(const [id,p] of Object.entries(newer.messagePins||{}))if(!pins[id]||p.updatedAt>=pins[id].updatedAt)pins[id]=p;v.messagePins=pins;v.messages=[...messages.values()].sort((a,b)=>a.time-b.time||String(a.id).localeCompare(String(b.id)));}if(x&&y&&list==='moments'){const older=newer===x?y:x;const comments=new Map([...(older.comments||[]),...(newer.comments||[])].map(m=>[m.id||m.author+':'+m.time+':'+m.text,m]));v.comments=[...comments.values()].sort((a,b)=>a.time-b.time);}if(list==='ais'&&y?.appearance){v.appearance=y.appearance;v.appearanceLocked=true;}out[list].push(v);}out[list].sort((x,y)=>String(x.id).localeCompare(String(y.id)));}
+
+ out.syncMeta.aliases={...(am.aliases||{}),...(bm.aliases||{})};if(W.normalizeAccount)out=W.normalizeAccount(out);const ids=new Set(out.ais.map(a=>a.id));out.chats=out.chats.map(c=>({...c,members:c.members.filter(id=>ids.has(id))})).filter(c=>c.members.length);return out;}
+
+W.mergeAccount=merge;
+
+function b64(a){let s='';for(let i=0;i<a.length;i+=8192)s+=String.fromCharCode(...a.subarray(i,i+8192));return btoa(s);}const bytes=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+
+async function derive(password,owner){const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);return b64(new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',iterations:600000,salt:new TextEncoder().encode('mushui-account-sync-v1|'+owner)},material,256)));}
+
+async function cryptoKey(raw){return crypto.subtle.importKey('raw',bytes(raw),'AES-GCM',false,['encrypt','decrypt']);}
+
+async function seal(value){const iv=crypto.getRandomValues(new Uint8Array(12)),cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},await cryptoKey(C.key),new TextEncoder().encode(json(value)));return {v:1,iv:b64(iv),cipher:b64(new Uint8Array(cipher))};}
+
+async function unseal(e){try{const data=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes(e.iv)},await cryptoKey(C.key),bytes(e.cipher))));if(data.schema!==1||collections.some(k=>!Array.isArray(data[k]))||!data.settings)throw Error();return data;}catch{throw Error('同步資料無法解密；已保留本機資料。請確認帳號密碼或由原裝置匯出備份。');}}
+
+W.accountStatus=()=>({phase:C.phase,error:C.error,last:C.last,remoteAvailable:C.remoteAvailable,revision:C.revision});
+
+const view=W.view;W.view=async()=>({...await view(),accountSync:W.accountStatus()});
+
+async function fillAccountProfile(){await edit(s=>{const me=s.human.me||{},defaults=W.defaults().settings;for(const [field,key] of [['nickname','name'],['avatar','avatar'],['birthday','birthday']]){if(!me[key]||s.syncMeta?.settings?.[field]||C.remote?.syncMeta?.settings?.[field])continue;if(s.settings[field]===undefined||s.settings[field]===(defaults[field]||''))s.settings[field]=me[key];}});}
+
+async function apply(data){if(json(base(await W.read()))===json(data))return;await edit(s=>{const latest=merge(base(s),data);for(const k of collections)s[k]=copy(latest[k]);s.settings={...s.settings,...Object.fromEntries(Object.entries(copy(latest.settings)).filter(([k])=>!skip.has(k)))};s.syncMeta=copy(latest.syncMeta);});}
+
+const syncRun=async()=>{if(window.DesktopDetached||!await W.key('human'))return;const startedVersion=C.localVersion;C.busy=true;C.phase='syncing';try{const s=await W.read(),owner=s.human.serverUrl+'|'+s.human.me.id;if(!s.human.me.id)throw Error('帳號資料不完整，請重新登入同一帳號以啟用同步');if(C.owner!==owner){C.owner=owner;C.revision=0;C.remote=null;const keys=JSON.parse(await W.key('accountSync')||'{}');C.key=keys[owner];}if(!C.key)throw Error('重新登入此帳號一次以啟用加密同步');
+
+ const pendingProfileKey='account-profile-pending-'+owner,pendingProfile=await W.get(pendingProfileKey);if(pendingProfile){await W.humanRequest('/v1/profile',pendingProfile);await W.humanSync();await W.put(pendingProfileKey,null);}
+
+ for(let attempt=0;attempt<4;attempt++){const r=await W.humanRequest('/v1/account/state?after='+C.revision);if(!Number.isInteger(r.revision)||(!r.unchanged&&r.envelope!==null&&typeof r.envelope!=='object'))throw Error('伺服器未傳回有效的帳號同步資料，請更新伺服器');if(r.unchanged&&C.syncedVersion===startedVersion&&C.syncedOwner===owner){C.last=Date.now();C.error='';C.phase='ready';return;}if(!r.unchanged){C.remoteAvailable=!!r.envelope;C.remote=r.envelope?await unseal(r.envelope):null;C.revision=r.revision;}const merged=merge(base(await W.read()),C.remote);if(json(merged)!==json(C.remote)){const result=await W.humanRequest('/v1/account/state',{revision:C.revision,envelope:await seal(merged)});if(result.conflict){C.revision=0;continue;}C.revision=result.revision;C.remote=merged;}await apply(merge(base(await W.read()),merged));C.last=Date.now();C.error='';C.remoteAvailable=true;C.phase='ready';C.syncedVersion=startedVersion;C.syncedOwner=owner;publish();return;}throw Error('多裝置正在同時同步，稍後會自動重試');
+
+ }catch(e){C.phase='error';if(e.status===404||/找不到此功能|不支援.*同步/.test(e.message))e.message='好友已登入，但伺服器尚未支援 AI 與個人資料同步。請更新伺服器，並保留原資料磁碟。';C.error=e.message;publish();throw e;}finally{C.busy=false;if(C.localVersion!==startedVersion)queueSync();}};
+
+W.accountSync=()=>{if(C.inflight)return C.inflight;if(C.busy)return Promise.resolve({skipped:true});const task=syncRun();C.inflight=task;const clear=()=>{if(C.inflight===task)C.inflight=null;};task.then(clear,clear);return task;};
+
+W.importAccountData=async raw=>{if(!raw||raw.schema!==1||!Array.isArray(raw.ais)||!Array.isArray(raw.chats)||!Array.isArray(raw.moments)||!raw.settings)throw Error('請選擇舊沐水匯出的完整 JSON 備份，不是角色卡');const incoming=base(W.migrate(copy(raw))),ids=new Set();for(const a of incoming.ais){if(typeof a.id!=='string'||!a.id||ids.has(a.id)||typeof a.name!=='string'||typeof a.personality!=='string')throw Error('備份中的 AI 資料不完整');ids.add(a.id);for(const field of ['avatar','cover'])if(a[field])W.images([a[field]],1);}const chatIds=new Set();for(const c of incoming.chats){if(typeof c.id!=='string'||!c.id||chatIds.has(c.id)||!Array.isArray(c.members)||!c.members.length||c.members.some(id=>!ids.has(id))||!Array.isArray(c.messages))throw Error('備份聊天室不完整');chatIds.add(c.id);const messages=new Set();for(const m of c.messages){if(typeof m.id!=='string'||!m.id||messages.has(m.id)||typeof m.text!=='string'||!Number.isFinite(m.time))throw Error('備份訊息資料無效');messages.add(m.id);W.images(m.images);if(m.sticker)W.sticker(m.sticker);if(m.audio&&(typeof m.audio.data!=='string'||!m.audio.data.startsWith('data:audio/wav;base64,')||m.audio.data.length>5000000))throw Error('備份語音資料無效');}}for(const p of incoming.moments){if(typeof p.id!=='string'||!Array.isArray(p.comments||[]))throw Error('備份朋友圈無效');W.images(p.images,9);}
+
+ const profileFields=['nickname','bio','avatar','cover','appBg','chatBg','theme','font','customFont','customFontName','textSize','birthday','memory','unifiedMemory'];incoming.settings=Object.fromEntries(profileFields.filter(k=>raw.settings[k]!==undefined).map(k=>[k,copy(raw.settings[k])]));for(const k of ['avatar','cover','appBg','chatBg'])if(incoming.settings[k])W.images([incoming.settings[k]],1);if(incoming.settings.memory!==undefined){const choices=[19,27,87,278];if(!Number.isFinite(+incoming.settings.memory))throw Error('備份記憶條數無效');incoming.settings.memory=choices.reduce((best,n)=>Math.abs(n-(+incoming.settings.memory))<Math.abs(best-(+incoming.settings.memory))?n:best,choices[0]);}
+
+ if(incoming.settings.nickname!==undefined&&(typeof incoming.settings.nickname!=='string'||!incoming.settings.nickname.trim()||incoming.settings.nickname.length>40))throw Error('備份中的暱稱需為 1–40 字');if(incoming.settings.birthday)incoming.settings.birthday=W.date(incoming.settings.birthday);
+
+ const current=await W.read(),owner=current.human.serverUrl+'|'+(current.human.me.id||'local');await W.put('account-before-import-'+owner,base(current));const now=Date.now();incoming.syncMeta={records:{},settings:{},deleted:{}};for(const list of collections)for(const record of incoming[list])incoming.syncMeta.records[list+'/'+record.id]=now;for(const k of Object.keys(incoming.settings))incoming.syncMeta.settings[k]=now;for(const a of incoming.ais){const existing=current.ais.find(v=>v.id===a.id);if(existing?.appearance){a.appearance=existing.appearance;a.appearanceLocked=true;}}
+
+ await W.edit(s=>{const merged=merge(base(s),incoming);for(const k of collections)s[k]=merged[k];s.settings={...s.settings,...merged.settings};s.syncMeta=merged.syncMeta;});let synced=false;if(await W.key('human')){if(['nickname','avatar','birthday'].some(k=>incoming.settings[k]!==undefined)){const saved=await W.read();await W.put('account-profile-pending-'+owner,{name:saved.settings.nickname||saved.human.me.name,avatar:saved.settings.avatar||'',birthday:saved.settings.birthday||''});}try{if(C.inflight)await C.inflight;await W.accountSync();synced=C.phase==='ready';}catch{}}return {state:await W.view(),imported:{ais:incoming.ais.length,chats:incoming.chats.length,moments:incoming.moments.length},synced};};
+
+W.pickAccountBackup=()=>new Promise((resolve,reject)=>{const input=document.createElement('input');input.type='file';input.accept='.json';input.hidden=true;document.body.append(input);input.oncancel=()=>{input.remove();resolve({cancelled:true});};input.onchange=async()=>{try{const file=input.files?.[0];if(!file){resolve({cancelled:true});return;}if(file.size>256*1024*1024)throw Error('備份檔案過大');const raw=JSON.parse((await file.text()).replace(/^\uFEFF/,''));resolve(await W.importAccountData(raw));}catch(e){reject(e);}finally{input.remove();}};input.click();});
+
+const dispatch=W.dispatch;W.dispatch=async(op,d)=>{if(op==='importAccountBackup'&&!window.DesktopDetached)return W.pickAccountBackup();return dispatch(op,d);};
+
+const human=W.human;W.human=async d=>{if(window.DesktopDetached)return human(d);if(['login','register'].includes(d.action)){if(C.inflight)await C.inflight.catch(()=>{});const beforeState=await W.read().catch(()=>null),stateOwner=beforeState?.human?.me?.id?beforeState.human.serverUrl+'|'+beforeState.human.me.id:'';const old=(await W.get('sync-owner'))||stateOwner;C.busy=true;try{const result=await human(d),s=await W.read(),owner=s.human.serverUrl+'|'+s.human.me.id;if(old&&(old!==owner||d.action==='register')){const deviceKeys=JSON.parse(await W.key('accountKeys')||'{}');deviceKeys[old]={};for(const slot of ['chat','image','voice','tts'])deviceKeys[old][slot]=await W.key(slot);await W.key('accountKeys',json(deviceKeys));for(const slot of ['chat','image','voice','tts'])await W.key(slot,deviceKeys[owner]?.[slot]||'');if(old!==owner)await W.put('account-local-'+old,base(s));const saved=d.action==='register'?null:await W.get('account-local-'+owner);if(d.action==='register')await W.put('account-local-'+owner,null);await edit(current=>{const defaults=W.defaults();for(const k of collections)current[k]=saved?.[k]||defaults[k];current.settings={...defaults.settings,...saved?.settings,...Object.fromEntries(['uiLanguage','appDisplayName','desktopAudio','desktopNotifications'].filter(k=>current.settings[k]!==undefined).map(k=>[k,current.settings[k]]))};current.syncMeta=saved?.syncMeta||{records:{},settings:{},deleted:{}};});}C.owner=owner;C.revision=0;C.remote=null;C.remoteAvailable=false;C.key=await derive(d.password,owner);const keys=JSON.parse(await W.key('accountSync')||'{}');keys[owner]=C.key;await W.key('accountSync',json(keys));await W.put('sync-owner',owner);}finally{C.busy=false;}try{await W.accountSync();}catch{}await fillAccountProfile();return {state:await W.view(),sync:W.accountStatus()};}
+
+ if(d.action==='logout'){try{await W.accountSync();}catch{}const s=await W.read();if(C.owner)await W.put('account-local-'+C.owner,base(s));C.owner='';C.key=null;C.remote=null;}const result=await human(d);if(d.action==='profile'){await W.edit(s=>{for(const [field,key] of [['nickname','name'],['avatar','avatar'],['birthday','birthday']])if(d[key]!==undefined)s.settings[field]=d[key];});result.state=await W.view();}return result;};
+
+setInterval(()=>{if(!window.DesktopDetached&&!document.hidden)W.accountSync().catch(()=>{});},6000);
+
+setInterval(()=>{if(!window.DesktopDetached&&document.hidden)W.accountSync().catch(()=>{});},10000);
+
+window.addEventListener('online',queueSync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)queueSync();});
+
+}
+
