@@ -1,0 +1,150 @@
+'use strict';
+
+let contactMode='ai',humanSyncing=false;
+
+const humanPending={};
+
+const officialAccountId='official-mushui';
+
+function officialMessages(){try{const saved=localStorage.getItem('mushui-official-messages'),list=saved===null?[{id:'official-welcome',sender:officialAccountId,recipient:officialAccountId,text:'您好，這裡是沐水官方帳號。版本公告與使用提示會在官方朋友圈分享。',time:Date.now(),official:true}]:JSON.parse(saved);return list.filter(m=>!m.release&&!String(m.id||'').startsWith('official-release-'));}catch{return [];}}
+
+let officialReplyBusy=false;
+
+function officialServiceBase(){const raw=String(state?.settings?.officialServerUrl||humanData().serverUrl||location.origin).trim(),u=new URL(raw,location.href),local=['localhost','127.0.0.1'].includes(u.hostname);if(!(u.protocol==='https:'||u.protocol==='http:'&&local)||u.username||u.password||u.search||u.hash||u.pathname!=='/')throw Error('官方服務網址須為 HTTPS 網址');return u.origin;}
+
+function humanData(){const h=state?.human||{serverUrl:'',me:{},friends:[],requests:[],messages:[],connected:false,background:false};return {...h,friends:[...(h.friends||[]).filter(p=>p.id!==officialAccountId),{id:officialAccountId,name:'沐水',avatar:'',official:true}],messages:[...(h.messages||[]),...officialMessages()]};}
+
+function humanFriend(id){return humanData().friends.find(p=>p.id===id)||{id,name:id,avatar:''};}
+
+function isHumanChat(){return chatId.startsWith('human:');}
+
+function humanModeButtons(){return `<div class="contact-mode" role="group" aria-label="聯絡人模式"><button data-contactmode="ai" class="${contactMode==='ai'?'selected':''}">AI</button><button data-contactmode="human" class="${contactMode==='human'?'selected':''}">人類</button></div>`;}
+
+function humanRow(p){return `<button class="contact-row" data-humancontact="${esc(p.id)}">${avatar(p)}<span><strong>${esc(p.name)}</strong>${p.official?'<small class="small" style="display:block">沐水官方帳號</small>':`<small class="small" style="display:block">ID：${esc(p.id)}</small>`}</span>${p.specialStar?`<span class="person-mark" aria-label="星星">${icon('star')}</span>`:''}${p.favorite?`<span class="person-mark" aria-label="最愛">${icon('heart')}</span>`:''}</button>`;}
+
+const contactsBeforeHuman=contactsView;
+
+contactsView=function(){
+
+ if(contactMode==='ai')return contactsBeforeHuman().replace('</header>','</header>'+humanModeButtons());
+
+ const h=humanData(),q=search.trim().toLowerCase(),list=h.friends.filter(p=>!q||p.id.includes(q)||p.name.toLowerCase().includes(q)||contactSort(p.name).key.includes(q)).slice().sort((a,b)=>contactSort(a.name).key.localeCompare(contactSort(b.name).key,'en')),favorites=list.filter(p=>p.favorite),others=list.filter(p=>!p.favorite);
+
+ let last='';return header('聯絡人','人類好友 · ID 與暱稱分開',btn('humanSearch','plus','搜尋 ID 加好友'))+humanModeButtons()+`<div class="content"><button class="setting-choice" data-action="humanAccount"><span>${h.connected?esc(h.me.name)+' · ID '+esc(h.me.id):'設定伺服器／註冊與登入'}</span>›</button>${h.lastError?`<p class="inline-error">${esc(h.lastError)}</p>`:''}${!h.connected?'<p class="help">先登入同一個好友伺服器，再搜尋對方的 ID。人類聊天獨立儲存，不會送給 AI。</p>':''}${h.requests.length?`<div class="card"><h3>好友申請</h3>${h.requests.map(r=>`<div class="human-request"><strong>${esc(r.name)}</strong><span class="small">ID：${esc(r.sender)}</span><div class="flex"><button class="pill primary" data-humanaccept="${r.id}">接受</button><button class="link-button" data-humandecline="${r.id}">婉拒</button></div></div>`).join('')}</div>`:''}</div><div class="search">${icon('search')}<input data-input="search" data-focus="search" value="${esc(search)}" placeholder="搜尋好友名字、ID 或拼音" aria-label="搜尋人類好友"></div><div class="content">${favorites.length?`<section class="contact-favorites"><div class="favorites-title">${icon('heart')} 最愛</div>${favorites.map(humanRow).join('')}</section>`:''}${others.map(p=>{const letter=contactSort(p.name).letter,s=letter!==last?`<div class="letter">${letter}</div>`:'';last=letter;return s+humanRow(p);}).join('')}${!list.length?'<p class="help">還沒有符合的好友，點右上角搜尋 ID。</p>':''}</div>`;
+
+};
+
+const chatsBeforeHuman=chatsView;
+
+chatsView=function(){
+
+ const h=humanData();if(!h.friends.length)return chatsBeforeHuman();
+
+ const q=search.trim().toLowerCase(),rows=[...state.chats.map(ch=>({kind:'ai',id:ch.id,name:title(ch),avatar:chatAvatar(ch),last:ch.messages.at(-1)})),...h.friends.map(p=>({kind:'human',id:p.id,name:p.name,avatar:avatar(p),last:h.messages.filter(m=>m.sender===p.id||m.recipient===p.id).at(-1)}))].filter(r=>!q||r.name.toLowerCase().includes(q)||r.id.includes(q)).sort((a,b)=>(b.last?.time||0)-(a.last?.time||0));
+
+ return header('聊天','AI 陪伴，也與真實好友相連。',btn('newChat','plus','建立 AI 新聊天或群組'))+`<div class="search">${icon('search')}<input data-input="search" data-focus="search" value="${esc(search)}" placeholder="搜尋聊天" aria-label="搜尋聊天"></div><div class="content">${rows.map(r=>`<button class="chat-row" ${r.kind==='human'?'data-humanchat':'data-chat'}="${esc(r.id)}">${r.avatar}<div class="chat-info"><h3><span>${esc(r.name)} <small class="small">${r.kind==='human'?'人類':'AI'}</small></span><time class="time">${r.last?ago(r.last.time):''}</time></h3><p>${esc(r.last?.text||(r.last?.sticker?'［表情包］':r.last?.images?.length?'［照片］':'開始聊天'))}</p></div></button>`).join('')}</div>`;
+
+};
+
+const chatBeforeHuman=chatView;
+
+chatView=function(){
+
+ if(!isHumanChat())return chatBeforeHuman();const id=chatId.slice(6),h=humanData(),p=humanFriend(id),official=p.official,messages=h.messages.filter(m=>m.sender===id||m.recipient===id),attachments=photoDrafts[chatId]||[];
+
+ return `<main class="conversation"><header class="top">${btn('closeChat','back','返回聊天清單')}${avatar(p,'tiny')}<div class="spacer"><h2>${esc(p.name)}</h2><p class="small">${official?'沐水官方帳號 · Claude Sonnet 5':'人類 · ID '+esc(id)}</p></div>${official?'<button class="pill" data-action="openOfficialMoments">朋友圈</button>':btn('humanSync','cloud','同步好友訊息')}${btn('chatOptions','more','聊天設定')}</header><section class="message-scroll" data-chat-id="${esc(chatId)}" aria-label="聊天訊息"><div class="message-list"><div class="day">${official?'官方帳號訊息保存在此裝置':'人類聊天 · 不會傳送給 AI · 訊息保存在好友伺服器'}</div>${messages.map(m=>{const mine=m.sender!==id,who=mine?(h.me?.id?h.me:{name:'我'}):p,s=stickerById(m.sticker?.id);return `<div class="message ${mine?'mine':''} ${m.callEvent?'call-event':''}" data-message-id="human-${esc(m.id)}">${avatar(who)}<div class="message-body"><div class="bubble ${s&&!m.text&&!m.images?.length?'sticker-only':''}">${chatMarkup(m.text)}${photos(m.images||[],!!m.spoilerImages,'human-'+m.id)}${m.photosRemoved?'<p class="small">［此則照片已清理］</p>':''}${s?`<button class="chat-sticker" data-previewsticker="${s.id}">${stickerImage(s)}</button>`:''}</div><div class="stamp">${time(m.time)}${official?` <button class="link-button" data-deleteofficial="${esc(m.id)}">刪除</button>`:mine?` <span class="delivery-check ${m.readAt?'is-read':''}" title="${m.readAt?'已讀':'已傳送'}">${m.readAt?'✓✓':'✓'}</span>`:''}</div></div></div>`;}).join('')}${officialReplyBusy?'<div class="typing">沐水官方 AI 正在輸入…</div>':''}${humanPending[chatId]?`<div class="message mine pending-message"><span class="avatar">${esc((h.me?.name||'我').slice(0,1))}</span><div class="message-body"><div class="bubble">${chatMarkup(humanPending[chatId].text||'')}</div><div class="stamp">正在傳送 <span class="delivery-check pending-check">✓</span></div></div></div>`:''}${sending.has(chatId)?'<div class="typing">正在傳送給好友…</div>':''}${official?`<div class="official-quick-actions"><button class="pill" data-action="officialAccount">帳號</button><button class="pill" data-action="officialHelp">幫助</button></div>`:''}${!official&&h.lastError?`<div class="error-box">${esc(h.lastError)}</div>`:''}</div></section>${attachments.length?`<div class="chat-attachments">${attachments.map((img,i)=>`<div class="attachment"><img src="${esc(img)}" alt="待傳照片"><button data-removechatphoto="${i}">×</button></div>`).join('')}</div>`:''}<form class="composer" id="messageForm"><button class="icon-button photo-button" type="button" data-action="chatPhoto" aria-label="選擇聊天照片">${icon('camera')}</button><textarea data-input="message" data-focus="message" aria-label="輸入訊息" placeholder="${official?'傳訊息給沐水…':'傳訊息給真實好友…'}" rows="1" maxlength="10000">${esc(chatDrafts[chatId]||'')}</textarea><button class="icon-button" type="submit" aria-label="傳送訊息" ${sending.has(chatId)||(!h.connected&&!official)?'disabled':''}>${icon('send')}</button></form></main>`;
+
+};
+
+const sendBeforeHuman=sendMessage;
+
+sendMessage=async function(retry=false){
+
+ if(chatId==='human:'+officialAccountId){const text=(chatDrafts[chatId]||'').trim();if(!text||officialReplyBusy)return;const list=officialMessages();list.push({id:crypto.randomUUID(),sender:humanData().me?.id||'me',recipient:officialAccountId,text,time:Date.now(),official:true});localStorage.setItem('mushui-official-messages',JSON.stringify(list));chatDrafts[chatId]='';officialReplyBusy=true;render();try{const r=await fetch(officialServiceBase()+'/v1/official/reply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:list.filter(m=>m.sender===officialAccountId||m.recipient===officialAccountId).slice(-12).map(m=>({role:m.sender===officialAccountId?'assistant':'user',content:m.text||''}))})}),data=await r.json();if(!r.ok)throw Error(data.error||'官方 AI 暫時無法回覆');list.push({id:crypto.randomUUID(),sender:officialAccountId,recipient:officialAccountId,text:data.reply,time:Date.now(),official:true});localStorage.setItem('mushui-official-messages',JSON.stringify(list));}catch(error){list.push({id:crypto.randomUUID(),sender:officialAccountId,recipient:officialAccountId,text:error.message.includes('尚未設定')?'官方 AI 尚未完成伺服器設定，請透過「幫助」聯絡客服。':'官方 AI 暫時無法回覆，請稍後再試。',time:Date.now(),official:true});localStorage.setItem('mushui-official-messages',JSON.stringify(list));}finally{officialReplyBusy=false;if(chatId==='human:'+officialAccountId)render();}return;}
+
+ if(!isHumanChat())return sendBeforeHuman(retry);const id=chatId;if(sending.has(id))return;
+
+ const text=chatDrafts[id]||'',images=[...(photoDrafts[id]||[])],sticker=stickerDrafts[id]||null,card=cardDrafts[id]||null,files=structuredClone(fileDrafts[id]||[]),replyTo=replyDrafts[id]||null;
+
+ const messageText=text|| (card?(card.type==='gift'?'送你一份虛擬禮物。':card.type==='redpacket'?'送你一個虛擬沐水紅包。':'給你一筆虛擬沐水幣。'):'');
+
+ const signature=JSON.stringify([messageText,images,sticker,card,files,replyTo]);if(!messageText.trim()&&!images.length&&!sticker&&!card&&!files.length)return;
+
+ const clientMessageId=humanPending[id]?.signature===signature?humanPending[id].id:crypto.randomUUID();humanPending[id]={signature,id:clientMessageId,text:messageText,images,sticker,card,files};
+
+ sending.add(id);chatDrafts[id]='';photoDrafts[id]=[];fileDrafts[id]=[];delete stickerDrafts[id];delete cardDrafts[id];delete replyDrafts[id];render();
+
+ try{const r=await call('human',{action:'send',id:id.slice(6),text:messageText,images,sticker,files:files.map(({buffer,frames,...f})=>f),audio:files.find(f=>f.audio)?.audio||null,virtualCard:card,replyTo,clientMessageId,spoilerImages:!!spoilerPhotoDrafts[id]});state=r.state;delete humanPending[id];}
+
+ catch(e){chatDrafts[id]=text;photoDrafts[id]=images;if(sticker)stickerDrafts[id]=sticker;if(card)cardDrafts[id]=card;fileDrafts[id]=files;if(replyTo)replyDrafts[id]=replyTo;toast(e.message);}
+
+ finally{sending.delete(id);render();}
+
+};
+
+actions.humanAccount=()=>{const h=humanData();showModal('人類帳號與伺服器',`<p class="help">雙方需連到同一個 HTTPS 伺服器。ID 是固定且唯一的好友搜尋識別碼；暱稱可以改，不會更動 ID。伺服器保存人類訊息，管理員可讀取，沒有端到端加密。</p><label>好友伺服器</label><input id="humanServer" type="url" value="${esc(h.serverUrl||(window.MushuiWeb?location.origin:''))}" placeholder="https://chat.example.com" autocapitalize="off"><p class="help">填伺服器首頁網址，不含 /v1。更換伺服器或登入另一帳號會重建這個帳號的本機快取。</p>${h.connected?`<div class="card"><p>ID：<b>${esc(h.me.id)}</b></p><label>暱稱</label><input id="humanName" value="${esc(h.me.name)}" maxlength="40"><button class="pill primary" data-action="humanRename">儲存暱稱</button><button class="pill" data-action="notifications">允許好友通知</button>${window.MushuiWeb?'<p class="help">iPhone 須先加入主畫面，再從此處允許推播。伺服器持續運行即可接收離線推播。</p>':`<button class="setting-choice" data-action="humanBackground">背景接收：${h.background?'ON':'OFF'}</button><p class="help">Android 會顯示持續接收通知；停止服務、強制停止 App 或系統終止時無法保證即時通知，訊息仍會留在伺服器。</p>`}<button class="link-button danger" data-action="humanLogout">登出</button></div>`:`<label>ID（6–24 位英數字／底線）</label><input id="humanUserId" autocapitalize="off" autocomplete="username"><label>暱稱（註冊時填）</label><input id="humanName" maxlength="40" value="${esc(state.settings.nickname||'我')}"><label>密碼（至少 8 字）</label><input id="humanPassword" type="password" autocomplete="current-password"><div class="sheet-actions"><button class="pill" data-action="humanRegister">註冊</button><button class="pill primary" data-action="humanLogin">登入</button></div>`}`);};
+
+async function humanCall(data){const r=await call('human',data);if(r.state)state=r.state;return r;}
+
+async function humanSign(action){const button=document.querySelector('[data-action="'+(action==='login'?'humanLogin':'humanRegister')+'"]');if(button)button.disabled=true;try{const r=await humanCall({action,url:$('#humanServer').value,userId:$('#humanUserId').value,name:$('#humanName').value,password:$('#humanPassword').value,deviceName:(window.MushuiDesktop?'Windows 電腦':deviceLabel())+' · '+(navigator.platform||'裝置')});closeModal();render();if(r.sync?.error){showModal('已登入，但資料同步未完成','<p class="inline-error">'+esc(r.sync.error)+'</p><p class="help">好友能顯示，不代表 AI、聊天與個人資料已完成同步。先保留原裝置資料，請勿清除或重新註冊帳號。</p><button class="pill primary" data-action="accountSync">檢查同步與移入舊資料</button>');}else toast('帳號已登入；請在帳號同步查看資料狀態',2200);}finally{if(button)button.disabled=false;}}
+
+actions.humanLogin=()=>humanSign('login');actions.humanRegister=()=>humanSign('register');
+
+actions.humanRename=async()=>{await humanCall({action:'profile',name:$('#humanName').value});closeModal();render();toast('暱稱已更新，ID 不變',1200);};
+
+actions.humanLogout=async()=>{await humanCall({action:'logout'});closeModal();render();};
+
+actions.officialAccount=()=>showModal('沐水帳號','<p class="help">帳號服務使用你的好友伺服器。更改密碼請到「我 → 設定 → 通知 → 聊天 → 隱私與安全性」；忘記密碼請聯絡人工客服。</p>');
+
+
+
+
+
+actions.officialHelp=async()=>{const r=await fetch(officialServiceBase()+'/v1/config'),data=await r.json(),url=String(data.supportUrl||'').trim();if(!url){showModal('線上客服','<p class="help">目前伺服器尚未設定線上客服網址。管理員可設定 MUSHUI_SUPPORT_URL，完成後「幫助」會直接連線客服。</p>');return;}let parsed;try{parsed=new URL(url);}catch{throw Error('客服網址設定無效');}if(parsed.protocol!=='https:'||parsed.username||parsed.password)throw Error('客服網址必須使用 HTTPS');if(window.MushuiDesktop||window.AndroidHost)await Desktop.invoke('openLink',{url:parsed.href,browser:'system'});else window.open(parsed.href,'_blank','noopener,noreferrer');};
+
+actions.humanBackground=async()=>{await humanCall({action:'background',enabled:!humanData().background});actions.humanAccount();};
+
+actions.humanLocationShare=async()=>{const id=window.pendingHumanLocationPeer,active=(humanData().locationShares||[]).includes(id);if(window.AndroidHost){if(!active){if(!state.settings.preciseLocation)await mutate('settings',{settings:{...state.settings,preciseLocation:true}});const fine=await call('preciseLocationPermission');if(!fine.granted){toast('請允許精確位置後再試',2000);return;}const background=await call('backgroundLocationPermission');if(!background.granted){toast(background.settingsOpened?'請在系統 App 權限中選「一律允許位置」，再回來點分享':'請允許背景位置後再試',2600);return;}}await humanCall({action:'locationShare',id,enabled:!active});}else{if(!navigator.geolocation||!WebEngine.humanRequest)throw Error('此版本沒有可用的位置權限介面');if(active)await WebEngine.humanRequest('/v1/location/share',{peer:id,enabled:false});else{const pos=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:20000,maximumAge:0}));const loc={latitude:pos.coords.latitude,longitude:pos.coords.longitude,accuracy:pos.coords.accuracy,updatedAt:pos.timestamp};await WebEngine.humanRequest('/v1/location/share',{peer:id,enabled:true,location:loc});}await WebEngine.humanSync();syncHumanLocationWatch();}closeModal();render();toast(active?'已停止分享；伺服器上的座標已清除':'已開始精確位置分享；只保留最新位置',1800);};
+
+let humanLocationWatch=null,lastHumanLocationPush=0;
+
+function syncHumanLocationWatch(){if(window.AndroidHost||!WebEngine.humanRequest)return;const peers=humanData().locationShares||[];if(!peers.length){if(humanLocationWatch!==null)navigator.geolocation?.clearWatch(humanLocationWatch);humanLocationWatch=null;return;}if(humanLocationWatch!==null||!navigator.geolocation)return;humanLocationWatch=navigator.geolocation.watchPosition(async p=>{if(document.hidden||Date.now()-lastHumanLocationPush<30000)return;lastHumanLocationPush=Date.now();const location={latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy:p.coords.accuracy,updatedAt:p.timestamp};for(const peer of humanData().locationShares||[])try{await WebEngine.humanRequest('/v1/location/share',{peer,enabled:true,location});}catch{}},()=>{}, {enableHighAccuracy:true,maximumAge:15000,timeout:20000});}
+
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncHumanLocationWatch();});
+
+actions.humanLocationView=async()=>{const id=window.pendingHumanLocationPeer,r=window.AndroidHost?await humanCall({action:'locationView',id}):await WebEngine.humanRequest('/v1/location/latest?peer='+encodeURIComponent(id),undefined);if(!r.shared){showModal('好友位置','<p class="help">對方目前沒有向你分享位置，或最後位置已超過兩分鐘。</p><p class="help">只有雙方各自開啟分享時，才能互相查看。</p>');return;}const when=new Date(r.updatedAt).toLocaleString();showModal('好友目前位置',`<p class="help">${esc(humanFriend(id).name)}分享的位置</p><h3>${Number(r.latitude).toFixed(5)}, ${Number(r.longitude).toFixed(5)}</h3><p class="help">定位精度約 ±${Math.round(r.accuracy)} 公尺 · 更新於 ${esc(when)}</p><a class="pill" href="https://maps.google.com/?q=${encodeURIComponent(r.latitude+','+r.longitude)}" target="_blank" rel="noopener">在地圖查看</a><p class="small">伺服器只保留最新位置，超過兩分鐘會視為過期。</p>`);};
+
+actions.humanSync=async()=>{if(humanSyncing)return;humanSyncing=true;try{await humanCall({action:'sync'});if(!modal)render();}finally{humanSyncing=false;}};
+
+actions.humanSearch=()=>{if(!humanData().connected){actions.humanAccount();return;}showModal('搜尋好友 ID',`<p class="help">以對方的固定 ID 搜尋，暱稱不作為唯一識別。</p><input id="friendSearchId" placeholder="輸入好友 ID" autocapitalize="off"><button class="pill primary" data-action="humanFind">搜尋</button>`);};
+
+actions.humanFind=async()=>{const r=await humanCall({action:'search',userId:$('#friendSearchId').value}),p=r.person;showModal('找到好友',`${avatar(p,'large')}<h3>${esc(p.name)}</h3><p class="help">ID：${esc(p.id)}</p><button class="pill primary" data-humanrequest="${esc(p.id)}">發送好友申請</button>`);};
+
+document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||b.disabled)return;try{
+
+ if(b.dataset.deleteofficial){const list=officialMessages().filter(m=>m.id!==b.dataset.deleteofficial);localStorage.setItem('mushui-official-messages',JSON.stringify(list));render();}
+
+ if(b.dataset.contactmode){contactMode=b.dataset.contactmode;search='';filter='全部';render();}
+
+ if(b.dataset.humanchat){closeModal();tab='chats';page='';chatId='human:'+b.dataset.humanchat;render();}
+
+ if(b.dataset.humancontact){const p=humanFriend(b.dataset.humancontact);if(p.official){closeModal();tab='chats';page='';chatId='human:'+officialAccountId;render();return;}const sharing=(humanData().locationShares||[]).includes(p.id);window.pendingHumanLocationPeer=p.id;showModal('人類好友',`<div class="human-profile">${avatar(p,'large')}<h2>${esc(p.name)}</h2><p class="help">ID：${esc(p.id)}</p><div class="sheet-actions"><button class="pill primary" data-humanchat="${esc(p.id)}">發訊息</button><button class="pill" data-humanfavorite="${esc(p.id)}">${p.favorite?'移除最愛':'☆ 最愛'}</button><button class="pill" data-humanspecial="${esc(p.id)}">${p.specialStar?'★ 移除星星':'☆ 星星'}</button></div><p class="help">星星只用於你明確開啟並選擇的裝置事件提醒。</p><div class="card"><h3>即時位置</h3>${window.AndroidHost||WebEngine.humanRequest?`<button class="pill primary" data-action="humanLocationShare">${sharing?'停止向此好友分享位置':'向此好友分享我的精確位置'}</button><button class="pill" data-action="humanLocationView">查看對方分享的位置</button><p class="small">雙方各自同意後才能互相查看。Android 可選擇背景位置；iOS／Safari 只在沐水開啟時更新。伺服器只暫存最新座標，兩分鐘後過期，停止分享會立即刪除。</p>`:'<p class="help">此建置尚未接上人類位置權限介面；目前不可分享座標。</p>'}</div></div>`);}
+
+ if(b.dataset.humanrequest){await humanCall({action:'request',userId:b.dataset.humanrequest});closeModal();render();toast('好友申請已送出，等待對方接受',1600);}
+
+ if(b.dataset.humanaccept||b.dataset.humandecline){await humanCall({action:b.dataset.humanaccept?'accept':'decline',requestId:Number(b.dataset.humanaccept||b.dataset.humandecline)});render();}
+
+ if(b.dataset.humanfavorite){await humanCall({action:'favorite',id:b.dataset.humanfavorite});closeModal();render();}
+
+ if(b.dataset.humanspecial){await humanCall({action:'specialStar',id:b.dataset.humanspecial,value:!humanFriend(b.dataset.humanspecial).specialStar});closeModal();render();}
+
+}catch(error){modalError(error);}});
+
+// Manual friend/message refresh only.
+
+const settingsBeforeHuman=settingsView;settingsView=function(){return settingsBeforeHuman().replace(settingRow('backup','cloud','備份與還原','JSON'),`<button class="setting-row" data-action="humanAccount"><span class="setting-icon">${icon('contacts')}</span><span class="label">人類帳號與好友伺服器</span><span class="chevron">›</span></button>`+settingRow('backup','cloud','備份與還原','JSON'));};
+
+if(state)render();
+
+const apiBeforeOfficialService=apiPage;apiPage=function(){return apiBeforeOfficialService().replace('</p><label>API 服務</label>',`</p><label>沐水官方服務網址</label><input data-field="officialServerUrl" type="url" value="${esc(draft.officialServerUrl||humanData().serverUrl||'')}" placeholder="https://你的伺服器"><p class="small">只供官方帳號客服與官方 AI 使用。Claude 金鑰只設定在伺服器私密環境變數，不會放入安裝包，也不會用於其他功能。</p><label>API 服務</label>`);};
+

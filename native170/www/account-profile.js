@@ -1,0 +1,149 @@
+'use strict';
+
+// WeChat-like personal hub, local favorites, device sessions, and external link routing.
+
+let favoriteCandidate='',favoriteProfileEditAvatar='',accountDeviceRows=[],accountDeviceLoading=false,accountDeviceLoaded=false;
+
+pageNames.sessions='登入裝置';pageNames.devices='裝置';pageNames.favorites='收藏';pageNames.records='記錄';pageNames['custom-stickers']='表情包';
+
+const accountProfileEdit=profilePage;
+
+const accountSettingsHome=settingsView;
+
+profilePage=function(){const h=humanData(),me=h.me||{},name=me.name||draft.nickname||'我',picture=me.avatar||draft.avatar,st=state.settings.myStatus&&state.settings.myStatus.expires>Date.now()?state.settings.myStatus:null;return `<div class="wx-my-profile"><button class="wx-profile-main" data-action="editMyProfile">${avatar({name,avatar:picture},'large')}<span><b>${esc(name)}</b><small>${me.id?'沐水 ID：'+esc(me.id):'個人資料'}</small></span><span class="spacer"></span><span class="chevron">›</span></button><button class="wx-status-bubble" data-action="setMyStatus"><span class="wx-status-label">${st?esc(st.text):'＋ 設定狀態'}</span><small>${st?'我的狀態':'分享此刻的心情'}</small></button><div class="wx-divider"></div><div class="wx-menu-group"><button class="wx-menu-row" data-action="walletInfo"><span class="wx-menu-icon green">◉</span><b>支付與服務</b><span class="spacer"></span><span class="wx-coin-balance">沐水幣　${Number(state.settings.mushuiCoins||0).toFixed(2)}</span><span class="chevron">›</span></button></div><div class="wx-menu-group"><button class="wx-menu-row" data-page="favorites"><span class="wx-menu-icon color">◇</span><b>收藏</b><span class="spacer"></span><small>${(state.settings.favorites||[]).length||''}</small><span class="chevron">›</span></button><button class="wx-menu-row" data-page="records"><span class="wx-menu-icon blue">▧</span><b>記錄</b><span class="spacer"></span><span class="chevron">›</span></button><button class="wx-menu-row" data-page="custom-stickers"><span class="wx-menu-icon orange">☺</span><b>表情包</b><span class="spacer"></span><small>${(state.settings.customStickers||[]).length||''}</small><span class="chevron">›</span></button></div><div class="wx-menu-group"><button class="wx-menu-row" data-action="goSettings"><span class="wx-menu-icon orange">⚙</span><b>設定</b><span class="spacer"></span><span class="chevron">›</span></button></div><p class="small wx-profile-note">資料與收藏保存在本機，登入好友帳號後可依伺服器設定同步。</p></div>`;};
+
+const accountBaseSettingsPage=settingsPage;settingsPage=function(){
+
+ if(page==='sessions')return `<header class="top"><div class="between"><div class="flex">${btn('back','back','返回')}<h2>登入裝置</h2></div><button class="pill" data-action="refreshAccountDevices">重新整理</button></div></header><div class="content"><p class="help">查看登入過此帳號的裝置。登出裝置後，該裝置下次連線需要重新登入。</p>${!humanData().connected?'<div class="card"><p>請先登入好友帳號，才能管理登入裝置。</p></div>':accountDeviceLoading?'<div class="history-loading visible"><span></span>載入登入裝置…</div>':`<div class="card">${accountDeviceRows.length?accountDeviceRows.map(d=>`<div class="account-device-row"><span class="wx-device-icon">▣</span><span class="device-copy"><b>${esc(d.name||'未知裝置')}${d.current?' · 目前裝置':''}</b><small>登入時間：${d.createdAt?new Date(d.createdAt*1000).toLocaleString():'日期未知'}</small></span><button class="pill danger" data-account-device-logout="${esc(d.id)}">登出</button></div>`).join(''):'<p class="help">目前沒有有效的登入裝置。</p>'}</div><button class="pill danger full" data-action="logoutAllAccountDevices">登出全部裝置（包含目前裝置）</button>`}</div>`;
+
+ if(page==='devices')return `<header class="top"><div class="between"><div class="flex">${btn('back','back','返回')}<h2>裝置</h2></div></div></header><div class="content"><p class="help">影片和連結會使用你選擇的瀏覽器開啟。iOS／iPadOS 會使用系統設定的預設瀏覽器。</p><div class="card"><label for="defaultBrowser">預設瀏覽器</label><select id="defaultBrowser" data-default-browser>${browserOptions().map(([id,label])=>`<option value="${id}" ${(state.settings.defaultBrowser||'system')===id?'selected':''}>${label}</option>`).join('')}</select><p class="small">只有點擊聊天中的外部連結時才會開啟瀏覽器；沐水不會自動載入連結預覽。</p></div><button class="setting-choice full" data-page="sessions">登入裝置與登出管理　›</button></div>`;
+
+ if(page==='favorites')return `<header class="top"><div class="between"><div class="flex">${btn('back','back','返回')}<h2>收藏</h2></div></div></header><div class="content">${favoriteCards()}</div>`;
+
+ if(page==='blocklist')return blockListPage();
+
+ if(page==='records')return `<header class="top"><div class="between"><div class="flex">${btn('back','back','返回')}<h2>記錄</h2></div></div></header><div class="content"><div class="wx-record-tabs"><span class="active">朋友圈</span><span>狀態</span></div><h2>我的朋友圈</h2>${state.moments.filter(p=>p.author==='me').slice().sort((a,b)=>b.time-a.time).map(p=>`<article class="wx-record-row"><time>${new Date(p.time).toLocaleDateString()}</time><div>${p.images?.length?`<div class="wx-record-grid">${p.images.map(src=>`<img src="${esc(src)}" loading="lazy">`).join('')}</div>`:''}<p>${esc(p.text||'照片')}</p></div></article>`).join('')||'<p class="help">還沒有發布朋友圈。</p>'}</div>`;
+
+ if(page==='custom-stickers')return `<header class="top"><div class="between"><div class="flex">${btn('back','back','返回')}<h2>表情包</h2></div><button class="pill primary" data-action="addCustomSticker">＋ 新增</button></div></header><div class="content"><p class="help">上傳 PNG、JPEG、WebP 或 GIF 圖片，單張不超過 25 MB。其他格式不支援。</p><div class="wx-custom-stickers">${(state.settings.customStickers||[]).map(s=>`<article><img src="${esc(s.data)}" alt="${esc(s.name)}"><div><b>${esc(s.name)}</b><small>${s.type==='image/gif'?'GIF':'圖片'}</small></div><button class="link-button" data-delete-custom-sticker="${esc(s.id)}">刪除</button><button class="pill" data-send-custom-sticker="${esc(s.id)}">傳送</button></article>`).join('')||'<p class="help">還沒有自訂表情包。</p>'}</div></div>`;
+
+ if(page==='profile')return `<header class="top"><div class="between"><div class="flex">${btn('back','back','返回')}<h2>個人資料</h2></div><button class="pill" data-action="save">儲存</button></div></header><div class="content">${accountProfileEdit()}</div>`;
+
+ if(page==='settings-home')return accountSettingsHome();
+
+ return accountBaseSettingsPage();
+
+};
+
+settingsView=function(){return profilePage();};
+
+function browserOptions(){if(window.IOSHost||window.MushuiNativeIOS||window.MushuiWeb)return [['system','系統預設瀏覽器']];if(window.AndroidHost)return [['system','系統預設瀏覽器'],['chrome','Chrome'],['firefox','Firefox'],['edge','Microsoft Edge']];if(window.MushuiDesktop)return [['system','系統預設瀏覽器'],['chrome','Google Chrome'],['edge','Microsoft Edge'],['firefox','Firefox']];return [['system','系統預設瀏覽器']];}
+
+
+const privacyWithDevices=privacySettingsPage;privacySettingsPage=function(){return privacyWithDevices()+`<div class="card"><button class="setting-row" data-page="sessions"><span class="setting-icon">▣</span><span class="label">登入裝置</span><span class="value">查看與登出</span><span class="chevron">›</span></button><button class="setting-row" data-page="blocklist"><span class="setting-icon">⊘</span><span class="label">封鎖名單</span><span class="value">AI 與人類好友</span><span class="chevron">›</span></button></div>`;};
+
+const notificationsWithBrowser=notificationPage;notificationPage=function(){return notificationsWithBrowser()+`<section class="card"><button class="setting-row" data-page="devices"><span class="setting-icon">▣</span><span class="label">裝置</span><span class="value">預設瀏覽器</span><span class="chevron">›</span></button></section>`;};
+
+function blockListPage(){const blocked=state.settings.blockedPeople||[];const rows=[...state.ais.map(p=>({id:p.id,type:'ai',name:p.name})),...humanData().friends.filter(p=>!p.official).map(p=>({id:p.id,type:'human',name:p.name}))];return `<header class="top"><div class="between"><div class="flex">${btn('back','back','返回')}<h2>封鎖名單</h2></div></div></header><div class="content"><p class="help">封鎖後不能互傳訊息。你可以選擇同時刪除此聯絡人的聊天記錄。</p><div class="card">${rows.map(p=>{const key=p.type+':'+p.id,on=blocked.includes(key);return `<div class="account-device-row"><span class="device-copy"><b>${esc(p.name)}</b><small>${p.type==='ai'?'AI 角色':'人類好友'} · ID ${esc(p.id)}</small></span><button class="pill ${on?'':'danger'}" data-block-person="${esc(key)}">${on?'解除封鎖':'封鎖'}</button></div>`;}).join('')||'<p class="help">目前沒有可封鎖的聯絡人。</p>'}</div></div>`;}
+
+let blockCandidate='';
+
+let pendingImportedAI='',importReturn={tab:'contacts',page:'',chatId:''};
+
+const pickImportBeforeSetup=actions.pickImport;actions.pickImport=async()=>{const before=new Set(state.ais.map(a=>a.id)),r=await call('pick',{kind:'import'});if(!r?.state)return;state=r.state;draft=structuredClone(state.settings);const created=state.ais.find(a=>!before.has(a.id));render();if(!created){toast('角色已匯入');return;}importSetupModal(created);};
+// After importing or creating an AI: optionally generate its poke line, profile photo and Moments cover.
+function importSetupModal(created,returnTo={tab,page,chatId},verb='匯入'){pendingImportedAI=created.id;importReturn=returnTo;showModal('初始化 AI 角色',`<p class="help">${esc(created.name)} 已${verb}。可先直接使用，也可以選擇生成個人化內容。已選項目會使用你設定的 AI API；圖片生成可能產生費用。</p><label class="flex"><input id="importGeneratePoke" type="checkbox"> 生成拍一拍尾句（最多 8 字）</label><label class="flex"><input id="importGenerateAvatar" type="checkbox"> 依個性生成 AI 頭像</label><label class="flex"><input id="importGenerateCover" type="checkbox"> 依個性生成朋友圈背景</label><p class="small">文字尾句使用聊天模型；頭像與背景使用圖片生成設定。你可以單選、複選或略過。</p><div class="sheet-actions"><button class="pill" data-action="finishImportedAI">直接完成</button><button class="pill primary" data-action="generateImportedAI">生成所選項目</button></div>`);}
+
+actions.finishImportedAI=()=>{pendingImportedAI='';closeModal();tab=importReturn.tab;page=importReturn.page;chatId=importReturn.chatId;render();toast('角色已就緒');};
+
+actions.generateImportedAI=async()=>{const choices={poke:$('#importGeneratePoke').checked,avatar:$('#importGenerateAvatar').checked,cover:$('#importGenerateCover').checked},id=pendingImportedAI;if(!id){closeModal();return;}if(!choices.poke&&!choices.avatar&&!choices.cover){actions.finishImportedAI();return;}const returnTo={...importReturn};closeModal();showModal('正在準備角色','<div class="history-loading visible"><span></span>正在依照個性生成，請稍候…</div><p class="small">此時可等待生成完成；角色資料已安全導入。</p>');let temporaryChat='',createdTemporaryChat=false,pokeWarning=false;try{const a=ai(id);if(choices.poke){try{const raw=await WebEngine.complete(state.settings,'請依照角色個性寫一條適合「拍一拍」的短尾句，最多 8 個中文字。只輸出尾句，不要加引號或解釋。',[{role:'user',content:`名字：${a.name}\n個性：${a.personality}`}]);const suffix=Array.from(String(raw||'').replace(/[「」"'\s。！!？?]/g,'')).slice(0,8).join('');const pokeSuffixes={...(state.settings.pokeSuffixes||{}),[id]:suffix};await mutate('settings',{settings:{...state.settings,pokeSuffixes}});}catch(pokeError){pokeWarning=true;console.warn('拍一拍文字生成失敗（聊天模型），繼續圖片生成',pokeError?.message||pokeError);}}if(choices.avatar||choices.cover){let target=state.chats.find(c=>c.members.length===1&&c.members[0]===id);if(!target){const r=await mutate('newChat',{members:[id]});temporaryChat=r.chatId;createdTemporaryChat=true;}else temporaryChat=target.id;for(const kind of ['avatar','cover'])if(choices[kind]){const r=await call('generate',{id:temporaryChat,aiId:id,kind});state=r.state;}}if(createdTemporaryChat&&temporaryChat){await mutate('deleteChat',{id:temporaryChat});}pendingImportedAI='';tab=returnTo.tab;page=returnTo.page;chatId=returnTo.chatId;closeModal();render();toast(pokeWarning?'圖片已生成；拍一拍文字未完成，請檢查聊天 API':'角色個人化內容已完成');}catch(err){if(createdTemporaryChat&&temporaryChat)await mutate('deleteChat',{id:temporaryChat}).catch(()=>{});$('#modalError').textContent=err.message||'生成失敗；角色仍已導入';document.querySelector('.sheet')?.insertAdjacentHTML('beforeend','<button class="pill primary full" data-action="finishImportedAI">完成導入</button>');}};
+
+function favoriteKey(chat,id){return chat+'|'+id;}
+
+function resolveFavorite(item){if(item.chatId?.startsWith('human:'))return humanData().messages.find(m=>String(m.id)===String(item.messageId));const c=state.chats.find(c=>c.id===item.chatId);return c?.messages.find(m=>String(m.id)===String(item.messageId));}
+
+function favoriteKind(m){if(m?.files?.some(f=>/^video\//i.test(f.mime||'')))return '影片';if(m?.images?.length)return '圖片';if(m?.audio)return '語音';if(/https?:\/\//i.test(m?.text||''))return '連結';return '訊息';}
+
+function favoriteCards(){const list=state.settings.favorites||[];return list.length?`<div class="card favorite-list">${list.slice().sort((a,b)=>(b.savedAt||0)-(a.savedAt||0)).map(f=>{const m=resolveFavorite(f),kind=m?favoriteKind(m):f.kind||'訊息';let author='沐水';if(m){if(f.chatId?.startsWith('human:'))author=String(m.sender).toLowerCase()===String(humanData().me.id).toLowerCase()?(humanData().me.name||'我'):humanFriend(m.sender).name;else author=m.author==='me'?(state.settings.nickname||'我'):person(m.author).name;}return `<article class="favorite-item"><button class="favorite-open" data-open-favorite="${esc(favoriteKey(f.chatId,f.messageId))}"><span class="favorite-kind">${esc(kind)}</span><b>${esc(author)}</b><span>${esc((m?.text||m?.files?.[0]?.name||'').slice(0,160)||'點開查看原訊息')}</span><small>${m?.time?new Date(m.time).toLocaleString(): '原訊息目前不可用'}</small></button><button class="icon-button favorite-remove" data-remove-favorite="${esc(favoriteKey(f.chatId,f.messageId))}" aria-label="移除收藏">${icon('close')}</button></article>`;}).join('')}</div>`:'<div class="empty"><span class="accent">◇</span><h2>還沒有收藏</h2><p>在聊天室選擇一條訊息收藏</p></div>';}
+
+const originalMessageActionsForFavorites=messageActions;messageActions=function(id){favoriteCandidate=String(id);originalMessageActionsForFavorites(id);const m=messageById(id),on=(state.settings.favorites||[]).some(f=>f.chatId===chatId&&String(f.messageId)===String(id));document.querySelector('.sheet-actions')?.insertAdjacentHTML('beforeend',`<button class="pill" data-action="toggleFavoriteMessage">${icon('star')} ${on?'取消收藏':'收藏'}</button>`);};
+
+actions.toggleFavoriteMessage=async()=>{const m=messageById(favoriteCandidate);if(!m)return;const list=[...(state.settings.favorites||[])],key=favoriteKey(chatId,m.id),index=list.findIndex(f=>favoriteKey(f.chatId,f.messageId)===key);if(index>=0)list.splice(index,1);else list.push({chatId,messageId:String(m.id),kind:favoriteKind(m),savedAt:Date.now()});await mutate('settings',{settings:{...state.settings,favorites:list}});closeModal();render();toast(index>=0?'已取消收藏':'已加入收藏');};
+
+actions.editMyProfile=()=>{const h=humanData(),me=h.me||{};favoriteProfileEditAvatar=me.avatar||draft.avatar||'';showModal('個人資料',`<button class="profile-edit-avatar" data-action="chooseMyAvatar">${avatar({name:me.name||draft.nickname||'我',avatar:favoriteProfileEditAvatar},'large')}</button><label for="myProfileName">名字</label><input id="myProfileName" maxlength="40" value="${esc(me.name||draft.nickname||'我')}"><label for="myProfileBio">個人簽名</label><textarea id="myProfileBio" maxlength="160">${esc(draft.bio||'')}</textarea><label for="myProfileRegion">地區</label><input id="myProfileRegion" maxlength="8" placeholder="任意文字，最多 8 字" value="${esc(state.settings.region||'')}"><p class="small">地區由你自行輸入，最多 8 個字。</p><p class="help">${me.id?'沐水 ID：'+esc(me.id):'使用者資料保存在本機。'}</p><button class="pill primary full" data-action="saveMyProfile">儲存個人資料</button>`);};
+
+actions.chooseMyAvatar=async()=>{const image=await pickImage();if(!image)return;favoriteProfileEditAvatar=image;const b=document.querySelector('.profile-edit-avatar');if(b)b.innerHTML=avatar({name:$('#myProfileName').value,avatar:image},'large');};
+
+actions.saveMyProfile=async()=>{const name=$('#myProfileName').value.trim(),bio=$('#myProfileBio').value.trim(),region=$('#myProfileRegion').value.trim();if(Array.from(region).length>8)throw Error('地區最多 8 個字');if(!name)throw Error('名字不可空白');draft.nickname=name;draft.bio=bio;draft.avatar=favoriteProfileEditAvatar;await mutate('settings',{settings:{...state.settings,nickname:name,bio,region,avatar:favoriteProfileEditAvatar}});draft=structuredClone(state.settings);if(humanData().connected)await humanCall({action:'profile',name,avatar:favoriteProfileEditAvatar});closeModal();render();toast('個人資料已儲存');};
+
+actions.goMyMoments=()=>{tab='moments';page='';chatId='';momentProfileId='me';render();};
+
+actions.goSettings=()=>{tab='settings';page='settings-home';chatId='';ensureDraft();render();};
+
+actions.walletInfo=()=>showModal('支付與服務',`<div class="card wx-wallet-card"><span class="small">沐水幣餘額</span><strong>${Number(state.settings.mushuiCoins||0).toFixed(2)}</strong></div><p class="help">沐水幣、轉帳、紅包與禮物僅供 App 內角色互動使用，不涉及真實支付或贈送。</p>`);
+
+actions.setMyStatus=()=>showModal('設定狀態',`<label for="myStatusText">狀態文字</label><input id="myStatusText" maxlength="80" placeholder="分享此刻的心情" value="${esc(state.settings.myStatus?.text||'')}"><label for="myStatusDuration">顯示時間</label><select id="myStatusDuration"><option value="1800000">30 分鐘</option><option value="3600000">1 小時</option><option value="21600000">6 小時</option><option value="43200000">12 小時</option><option value="86400000">1 天</option><option value="0">永久</option></select><div class="flex"><button class="pill" data-action="clearMyStatus">清除狀態</button><button class="pill primary" data-action="saveMyStatus">發布狀態</button></div>`);
+
+actions.saveMyStatus=async()=>{const text=$('#myStatusText').value.trim(),duration=Number($('#myStatusDuration').value);if(!text)throw Error('請輸入狀態文字');await mutate('settings',{settings:{...state.settings,myStatus:{text,expires:duration?Date.now()+duration:Number.MAX_SAFE_INTEGER}}});closeModal();render();toast('狀態已更新');};
+
+actions.clearMyStatus=async()=>{await mutate('settings',{settings:{...state.settings,myStatus:null}});closeModal();render();toast('狀態已清除');};
+
+actions.addCustomSticker=()=>{const input=document.createElement('input');input.type='file';input.accept='image/png,image/jpeg,image/webp,image/gif';input.onchange=async()=>{const file=input.files?.[0];if(!file)return;if(file.size>25*1024*1024)throw Error('表情包圖片不可超過 25 MB');if(!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type))throw Error('僅支援 PNG、JPEG、WebP 或 GIF 圖片');const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});const list=[...(state.settings.customStickers||[])];if(list.length>=50)throw Error('最多儲存 50 個自訂表情包');list.push({id:crypto.randomUUID(),name:file.name.replace(/\.[^.]+$/,'').slice(0,40)||'自訂表情',type:file.type,data});await mutate('settings',{settings:{...state.settings,customStickers:list}});render();toast('表情包已新增');};input.click();};
+
+actions.sendCustomSticker=async(id)=>{const sticker=(state.settings.customStickers||[]).find(x=>x.id===id);if(!sticker)return;if(!chatId){toast('請先打開聊天室，再從表情包選擇自訂圖片');return;}photoDrafts[chatId]=[...(photoDrafts[chatId]||[]),sticker.data];tab='chats';page='';stickerPanelChat='';render();};
+
+document.addEventListener('click',async e=>{const del=e.target.closest('[data-delete-custom-sticker]');if(del){const customStickers=(state.settings.customStickers||[]).filter(s=>s.id!==del.dataset.deleteCustomSticker);await mutate('settings',{settings:{...state.settings,customStickers}});render();return;}const send=e.target.closest('[data-send-custom-sticker]');if(send)actions.sendCustomSticker(send.dataset.sendCustomSticker);});
+
+const composerPanelWithCustomStickers=syncComposerPanel;syncComposerPanel=function(force=false){composerPanelWithCustomStickers(force);const panel=document.querySelector('.sticker-panel');if(!panel)return;const custom=state.settings.customStickers||[];panel.insertAdjacentHTML('beforeend',`<h3 class="custom-sticker-heading">我的表情包</h3><div class="sticker-grid custom-sticker-grid">${custom.map(s=>`<button data-send-custom-sticker="${esc(s.id)}" aria-label="傳送${esc(s.name)}"><img src="${esc(s.data)}" alt="${esc(s.name)}"><span>${esc(s.name)}</span></button>`).join('')}<button data-action="goCustomStickers"><span class="custom-sticker-add">＋</span><span>管理表情包</span></button></div>`);};
+
+actions.goCustomStickers=()=>{tab='settings';page='custom-stickers';render();};
+
+actions.saveMyStatus=async()=>{const text=$('#myStatusText').value.trim(),duration=Number($('#myStatusDuration').value);if(!text)throw Error('請輸入狀態文字');await mutate('settings',{settings:{...state.settings,myStatus:{text,expires:duration?Date.now()+duration:Number.MAX_SAFE_INTEGER}}});closeModal();render();toast('狀態已更新');};
+
+actions.clearMyStatus=async()=>{await mutate('settings',{settings:{...state.settings,myStatus:null}});closeModal();render();toast('狀態已清除');};
+
+actions.requestBlock=key=>{blockCandidate=key;showModal('封鎖聯絡人','<p class="help">封鎖後雙方不能互傳訊息。要同時刪除與此聯絡人的聊天記錄嗎？</p><div class="sheet-actions"><button class="pill" data-blockchoice="keep">封鎖並保留聊天</button><button class="pill danger" data-blockchoice="delete">封鎖並刪除聊天</button></div>');};
+
+actions.toggleBlock=async(key,removeConversation=false)=>{const [type,id]=key.split(':',2);if(type==='human'&&id==='official-mushui')throw Error('沐水官方帳號不可封鎖');const people=[...(state.settings.blockedPeople||[])];if(type==='human'){await humanCall({action:'blockPeer',id,blocked:!people.includes(key),deleteConversation:!people.includes(key)&&removeConversation});if(removeConversation){await humanCall({action:'deleteConversation',id});await mutate('deleteHumanChat',{id});}}else{await mutate('blockAI',{id,blocked:!people.includes(key),deleteConversation:!people.includes(key)&&removeConversation});}const next=people.includes(key)?people.filter(x=>x!==key):[...people,key];await mutate('settings',{settings:{...state.settings,blockedPeople:next}});render();toast(people.includes(key)?'已解除封鎖':'已封鎖');};
+
+const chatOptionsBeforePoke=actions.chatOptions;actions.chatOptions=()=>{if(isHumanChat()){const id=chatId.slice(6),p=humanFriend(id);showModal('聊天設定',`<h3>${esc(p.name)}</h3><p class="help">${p.official?'沐水官方帳號':'人類好友 · ID '+esc(id)}</p><button class="setting-choice full" data-action="chatPermissions">朋友圈與狀態權限　›</button>${p.official?'<button class="setting-choice full" data-action="openOfficialMoments">查看官方朋友圈　›</button>':''}`);return;}chatOptionsBeforePoke();document.querySelector('.sheet')?.insertAdjacentHTML('beforeend','<button class="setting-choice full" data-action="chatPermissions">朋友圈與狀態權限　›</button><button class="setting-choice full" data-action="configurePoke">拍一拍設定　›</button>');};
+
+actions.chatPermissions=()=>{const ids=isHumanChat()?[['human',chatId.slice(6),humanFriend(chatId.slice(6)).name]]:(state.chats.find(c=>c.id===chatId)?.members||[]).map(id=>['ai',id,ai(id).name]),visibility=state.settings.personVisibility||{};showModal('朋友圈與狀態權限',`<p class="help">選擇你對每位聯絡人隱藏的內容。設定保存在此帳號的資料中。</p>${ids.map(([kind,id,name])=>{const key=kind+':'+id,v=visibility[key]||{};return `<div class="card"><h3>${esc(name)}</h3><button class="setting-choice full" data-personvisibility="${esc(key)}" data-visibility="hideMoments">${v.hideMoments?'ON':'OFF'} · 對 ${esc(name)} 隱藏朋友圈</button><button class="setting-choice full" data-personvisibility="${esc(key)}" data-visibility="hideStatus">${v.hideStatus?'ON':'OFF'} · 對 ${esc(name)} 隱藏狀態</button></div>`;}).join('')}<p class="small">對 AI 隱藏的朋友圈與狀態不會放入該角色的聊天上下文或朋友圈互動。人類好友的可見權限會隨好友同步服務支援範圍生效。</p>`);};
+
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-personvisibility][data-visibility]');if(!b)return;try{const all={...(state.settings.personVisibility||{})},entry={...(all[b.dataset.personvisibility]||{})};entry[b.dataset.visibility]=!entry[b.dataset.visibility];all[b.dataset.personvisibility]=entry;await mutate('settings',{settings:{...state.settings,personVisibility:all}});actions.chatPermissions();}catch(err){modalError(err);}});
+
+const officialReleaseText=`沐水帶著 3.0.1 更新來找你啦！( ੭ ˙ᗜ˙ )੭
+這次把大家回報的問題一個一個修好了，也讓沐水用起來更順手。
+
+－ 英文介面：全面檢查並補齊翻譯，切換成英文時不會再出現中文。
+－ 傳送訊息：按下送出就立即顯示，不會再出現「正在傳送中」，連續傳送也會照順序送達。
+－ 聊天室：修正拍一拍與打字時，畫面跳到上面訊息的問題。
+－ 星星：提醒改成系統訊息樣式，並寫明是哪台裝置（手機或電腦）的通知。
+－ 效能：減少聊天室重繪的負擔，左右滑動訊息時更流暢。
+
+還有任何問題都可以來找沐水聊聊哦！沐水一直都在 (｡•ᴗ•｡)`;
+
+
+
+
+actions.configurePoke=()=>{const ids=isHumanChat()?[chatId.slice(6)]:[...(state.chats.find(c=>c.id===chatId)?.members||[])],options=[['me','我'],...ids.map(id=>[id,isHumanChat()?humanFriend(id).name:ai(id).name])],suffixes=state.settings.pokeSuffixes||{};showModal('拍一拍設定',`<p class="help">設定被拍一拍時顯示的尾句，最多 8 個字。</p><label for="pokePerson">設定對象</label><select id="pokePerson">${options.map(([id,name])=>`<option value="${esc(id)}">${esc(name)}</option>`).join('')}</select><label for="pokeSuffix">尾句</label><input id="pokeSuffix" maxlength="8" placeholder="例如：的小腦袋" value="${esc(suffixes[options[0][0]]||'')}"><button class="pill primary full" data-action="savePokeSuffix">儲存拍一拍設定</button>`);document.querySelector('#pokePerson').onchange=e=>{$('#pokeSuffix').value=(state.settings.pokeSuffixes||{})[e.target.value]||'';};};
+
+actions.savePokeSuffix=async()=>{const id=$('#pokePerson').value,text=$('#pokeSuffix').value.trim();if(Array.from(text).length>8)throw Error('拍一拍尾句最多 8 個字');const pokeSuffixes={...(state.settings.pokeSuffixes||{}),[id]:text};await mutate('settings',{settings:{...state.settings,pokeSuffixes}});closeModal();toast('拍一拍設定已儲存');};
+
+document.addEventListener('click',async e=>{const person=e.target.closest('[data-block-person]');if(person){const key=person.dataset.blockPerson;if((state.settings.blockedPeople||[]).includes(key))await actions.toggleBlock(key);else actions.requestBlock(key);return;}const choice=e.target.closest('[data-blockchoice]');if(choice){const key=blockCandidate,del=choice.dataset.blockchoice==='delete';closeModal();await actions.toggleBlock(key,del);}});
+
+const chatBeforePoke=chatView;chatView=function(){const html=chatBeforePoke();if(!chatId)return html;return html.replace('</header>','<button class="link-button" data-action="configurePoke">拍一拍</button></header>');};
+
+document.addEventListener('click',async e=>{const av=e.target.closest('.message .avatar');if(!av||e.detail!==2||!chatId)return;const row=av.closest('.message'),suffixes=state.settings.pokeSuffixes||{},mine=row.classList.contains('mine');if(isHumanChat()){const peer=chatId.slice(6),text=(humanData().me.name||'我')+'拍了拍你'+(suffixes.me||'');await humanCall({action:'send',id:peer,text,clientMessageId:crypto.randomUUID()});}else{const m=messageById(row.dataset.messageId),actor=mine?'me':(m?.author||state.chats.find(c=>c.id===chatId)?.members?.[0]||'me'),actorName=actor==='me'?'我':ai(actor).name,targetName=actor==='me'?title(state.chats.find(c=>c.id===chatId)):'我',text=actor==='me'?`我拍了拍${targetName}${suffixes.me||''}`:`${actorName}拍了拍我${suffixes[actor]||''}`;await mutate('poke',{id:chatId,actor,text});render();}});
+
+actions.refreshAccountDevices=async()=>{if(!humanData().connected){accountDeviceRows=[];accountDeviceLoaded=true;return;}accountDeviceLoading=true;accountDeviceLoaded=false;render();try{const r=await humanCall({action:'devices'});accountDeviceRows=r.devices||[];accountDeviceLoaded=true;}catch(e){accountDeviceRows=[];accountDeviceLoaded=true;toast(e.message||'無法載入裝置');}finally{accountDeviceLoading=false;render();}};
+
+actions.logoutAllAccountDevices=()=>confirmModal('登出全部裝置','包含目前這部裝置。所有裝置下次連線都需要重新登入。',async()=>{await humanCall({action:'logoutAllDevices'});closeModal();accountDeviceRows=[];page='';render();toast('所有裝置已登出');});
+
+document.addEventListener('click',async e=>{const remove=e.target.closest('[data-remove-favorite]');if(remove){const key=remove.dataset.removeFavorite;const favorites=(state.settings.favorites||[]).filter(f=>favoriteKey(f.chatId,f.messageId)!==key);await mutate('settings',{settings:{...state.settings,favorites}});render();return;}const open=e.target.closest('[data-open-favorite]');if(open){const f=(state.settings.favorites||[]).find(f=>favoriteKey(f.chatId,f.messageId)===open.dataset.openFavorite);if(!f)return;tab='chats';page='';chatId=f.chatId;render();setTimeout(()=>window.revealChatMessage?.(f.messageId),120);return;}const logout=e.target.closest('[data-account-device-logout]');if(logout){try{const r=await humanCall({action:'logoutDevice',id:logout.dataset.accountDeviceLogout});if(r.current){page='';render();toast('目前裝置已登出');}else await actions.refreshAccountDevices();}catch(err){toast(err.message||'登出失敗');}}});
+
+document.addEventListener('change',async e=>{if(e.target.matches('[data-default-browser]')){await mutate('settings',{settings:{...state.settings,defaultBrowser:e.target.value}});toast('預設瀏覽器已儲存',1000);}});
+
+document.addEventListener('click',e=>{const a=e.target.closest('.message a[href]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const u=new URL(a.href);if(!['https:','http:'].includes(u.protocol)||u.username||u.password){toast('連結格式不安全');return;}const browser=state.settings.defaultBrowser||'system';if(window.MushuiDesktop||window.AndroidHost)Desktop.invoke('openLink',{url:u.href,browser}).catch(err=>toast(err.message||'無法開啟瀏覽器'));else window.open(u.href,'_blank','noopener,noreferrer');},true);
+
+const renderBeforeAccountProfile=render;render=function(){renderBeforeAccountProfile();if(page==='sessions'&&humanData().connected&&!accountDeviceLoading&&!accountDeviceLoaded)actions.refreshAccountDevices();};
+
