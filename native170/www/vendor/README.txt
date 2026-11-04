@@ -1,0 +1,1 @@
+pinyin-pro 3.29.5, MIT, Copyright zh-lx. Source: https://github.com/zh-lx/pinyin-pro . Vendored from the npm 3.29.5 distribution after SHA-512 integrity verification. Used offline for contact pinyin sorting. See pinyin-pro-LICENSE.txt.
