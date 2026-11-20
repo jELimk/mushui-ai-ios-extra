@@ -1,0 +1,2 @@
+pinyin-pro 3.29.5, MIT, Copyright zh-lx. Source: https://github.com/zh-lx/pinyin-pro . Vendored from the npm 3.29.5 distribution after SHA-512 integrity verification. Used offline for contact pinyin sorting. See pinyin-pro-LICENSE.txt.
+RNNoise voice suppression: @sapphi-red/web-noise-suppressor v0.3.5 (MIT, https://github.com/sapphi-red/web-noise-suppressor); RNNoise core BSD-3-Clause (https://github.com/xiph/rnnoise). Files: rnnoise-worklet.js, rnnoise.wasm, rnnoise_simd.wasm.
