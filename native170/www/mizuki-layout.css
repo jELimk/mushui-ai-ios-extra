@@ -1,0 +1,129 @@
+/* Shared layout for the compact settings pages and theme-specific bubbles. */
+.mz-settings-divider {
+  height: 1px;
+  border: 0;
+  margin: 6px 6px;
+  background: var(--line);
+}
+.mz-settings-layout > .card { margin-bottom: 10px; }
+.mz-settings-layout .card .setting-row { padding-block: 9px; min-height: 40px; }
+.mz-settings-layout p.help, .mz-settings-layout p.small { margin-block: 6px; }
+.mz-settings-layout .toggle-row { padding-block: 6px; }
+.mz-settings-layout .mz-compact-test { padding-block: 10px; }
+.mz-settings-layout .mz-compact-test textarea { min-height: 36px; }
+.mz-settings-api label { margin-block: 7px 4px; }
+.mz-settings-api :is(input,.link-button,.provider-grid button,.model-grid button) { min-height: 34px; padding-block: 4px; }
+.mz-settings-api .card { padding-block: 10px; }
+.mz-settings-api .mz-model-note { margin-top: 4px; }
+.mz-settings-api :is(.provider-help,.api-key-row .small,.mz-model-note,.mz-api-note) { line-height: 1.35; }
+.mz-settings-api .api-key-row { margin-top: 2px; }
+.mz-settings-api .provider-grid, .mz-settings-api .model-grid { gap: 4px; }
+.mz-api-connection > summary { cursor: pointer; font-weight: 700; padding-block: 4px; }
+.mz-api-connection > .card { margin: 8px 0 0; }
+.mz-settings-api > :is(.mz-model-note,.mz-api-note) { margin-block: 4px; }
+.mz-settings-api > .link-button { margin-block: 0; }
+.mz-settings-layout .mz-compact-test .mz-safety-result:empty { display: none; }
+.mz-settings-chat .section-label { margin-block-start: 18px; }
+.mz-settings-privacy .mz-applock-card:has([data-action="mzLockDisable"]) { display:flex; flex-direction:column; align-items:flex-start; }
+.mz-settings-privacy .mz-applock-card:has([data-action="mzLockDisable"]) [data-action="mzLockSetup"] { order:1; }
+html:root body .memory-grid .selected {
+  background: var(--accent) !important;
+  color: var(--surface, white) !important;
+  border-color: var(--accent) !important;
+}
+html:root:root body #app .page > .top:has(> .between > .flex > [data-action="back"]) {
+  padding-inline-start: 16px;
+}
+html:root body #app .page > .top:has(> .between > .flex > [data-action="back"]) > .between {
+  max-width: none;
+}
+html:root body #app .desktop-list-scroll .account-sync-status { margin-top: 10px; }
+html:root body #app .wx-menu-group > .wx-menu-row { position: relative; border-bottom: 0 !important; }
+html:root body #app .wx-menu-group > .wx-menu-row:not(:last-child)::before {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 0;
+  height: 1px;
+  content: "";
+  background: var(--line);
+  pointer-events: none;
+}
+@media (min-height: 720px) {
+  html:root #app .wx-my-profile .wx-profile-main { padding-block: clamp(12px, 2vh, 22px); }
+  html:root #app .wx-my-profile .wx-menu-row { min-height: clamp(44px, 7.1vh, 59px); }
+}
+html.mz-cyber:root:root #app :is(.page > .content,.mz-listen-actions,.moments-feed,.contact-mode) { margin-top: 14px; }
+html.mz-cyber:root:root #app .page > .moments-view { padding-top: 14px; }
+html.mz-cyber:root:root #app .mz-settings-layout > .card { margin-bottom: 14px; }
+html.mz-cyber:root:root #app .content > .contact-mode { margin-top: 0; }
+html.mz-cyber:root:root #app .mz-dark-card :is(.mz-seg,.mz-segs,button) { border-radius: 0!important; }
+html:not(.mz-glass):root:root #app .conversation > header.top {
+  margin-inline: 0!important;
+  border-radius: 0!important;
+}
+html:root body .sticker-panel .sticker-grid button img { object-fit: contain; }
+html:root body .sticker-panel .sticker-grid button { content-visibility: auto; contain-intrinsic-block-size: auto 82px; }
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles) #app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble) {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  margin-block: 10px;
+  border-radius: 18px;
+  --mz-creature-fill: color-mix(in srgb,var(--surface) 72%,var(--soft));
+  --mz-creature-edge: color-mix(in srgb,var(--ink) 25%,transparent);
+}
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles) #app .message.mine .bubble { --mz-creature-fill: var(--soft); }
+html.mz-cat-bubbles #app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble)::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 7px;
+  right: 7px;
+  height: 10px;
+  pointer-events: none;
+  background: var(--mz-creature-fill);
+  clip-path: polygon(0 100%, 8% 0, 19% 100%, 81% 100%, 92% 0, 100% 100%);
+}
+html.mz-cat-bubbles #app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble)::after {
+  content: "";
+  position: absolute;
+  width: 31px;
+  height: 11px;
+  right: -3px;
+  bottom: -8px;
+  border: 1px solid var(--mz-creature-edge);
+  border-top-width: 0;
+  border-radius: 3px 4px 14px 15px;
+  background: repeating-linear-gradient(78deg,transparent 0 6px,var(--mz-creature-edge) 7px 8px), var(--mz-creature-fill);
+  pointer-events: none;
+}
+html.mz-cat-bubbles #app .message.mine .bubble::after { right:auto; left:-3px; transform:scaleX(-1); }
+html.mz-jelly-bubbles #app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble)::before {
+  content: "";
+  position: absolute;
+  left: 25%;
+  right: 25%;
+  height: 12px;
+  top: -12px;
+  border: 1px solid var(--mz-creature-edge);
+  border-bottom: 0;
+  border-radius: 70% 70% 0 0 / 95% 95% 0 0;
+  background: radial-gradient(ellipse 4px 3px at calc(50% - 5px) 55%,transparent 45%,var(--mz-creature-edge) 55% 73%,transparent 82%),
+              radial-gradient(ellipse 4px 3px at calc(50% + 5px) 55%,transparent 45%,var(--mz-creature-edge) 55% 73%,transparent 82%),
+              radial-gradient(ellipse 3px 3px at 50% 31%,transparent 39%,var(--mz-creature-edge) 51% 71%,transparent 82%),
+              radial-gradient(ellipse 3px 3px at 50% 81%,transparent 39%,var(--mz-creature-edge) 51% 71%,transparent 82%),
+              var(--glass);
+  pointer-events: none;
+}
+html.mz-jelly-bubbles #app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble)::after {
+  content: "";
+  position: absolute;
+  inset: -8px -9px -6px;
+  background: radial-gradient(circle at right 5px top 5px,var(--glass-hi) 0 2px,transparent 3px),
+    radial-gradient(circle at right 11px top 11px,var(--glass-hi) 0 1.5px,transparent 2.5px),
+    radial-gradient(circle at left 7px bottom 10px,var(--glass-hi) 0 2px,transparent 3px),
+    repeating-linear-gradient(90deg,var(--mz-creature-edge) 0 1px,transparent 1px 6px) bottom center / 75% 4px no-repeat;
+  pointer-events: none;
+}
+html.mz-jelly-bubbles #app .message.mine .bubble::after { transform: scaleX(-1); }
