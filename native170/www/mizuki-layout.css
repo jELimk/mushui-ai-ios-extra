@@ -1,0 +1,267 @@
+/* Shared layout for the compact settings pages and theme-specific bubbles. */
+.mz-settings-divider {
+  height: 1px;
+  border: 0;
+  margin: 6px 6px;
+  background: var(--line);
+}
+.mz-settings-layout > .card { margin-bottom: 10px; }
+.mz-settings-layout .card .setting-row { padding-block: 9px; min-height: 40px; }
+.mz-settings-layout p.help, .mz-settings-layout p.small { margin-block: 6px; }
+.mz-settings-layout .toggle-row { padding-block: 6px; }
+.mz-settings-layout .mz-compact-test { padding-block: 10px; }
+.mz-settings-layout .mz-compact-test textarea { min-height: 36px; }
+.mz-settings-api label { margin-block: 7px 4px; }
+.mz-settings-api :is(input,.link-button,.provider-grid button,.model-grid button) { min-height: 34px; padding-block: 4px; }
+.mz-settings-api .card { padding-block: 10px; }
+.mz-settings-api .mz-model-note { margin-top: 4px; }
+.mz-settings-api :is(.provider-help,.api-key-row .small,.mz-model-note,.mz-api-note) { line-height: 1.35; }
+.mz-settings-api .api-key-row { margin-top: 2px; }
+.mz-settings-api .provider-grid, .mz-settings-api .model-grid { gap: 4px; }
+.mz-api-connection > summary { cursor: pointer; font-weight: 700; padding-block: 4px; }
+.mz-api-connection > .card { margin: 8px 0 0; }
+.mz-api-connection > [hidden] { display:none!important; }
+.mz-settings-api > :is(.mz-model-note,.mz-api-note) { margin-block: 4px; }
+.mz-settings-api > .link-button { margin-block: 0; }
+.mz-settings-layout .mz-compact-test .mz-safety-result:empty { display: none; }
+.mz-settings-chat .section-label { margin-block-start: 18px; }
+.mz-settings-privacy .mz-applock-card:has([data-action="mzLockDisable"]) { display:flex; flex-direction:column; align-items:flex-start; }
+.mz-settings-privacy .mz-applock-card:has([data-action="mzLockDisable"]) [data-action="mzLockSetup"] { order:1; }
+html:root body .memory-grid .selected {
+  background: var(--accent) !important;
+  color: var(--surface, white) !important;
+  border-color: var(--accent) !important;
+}
+html:root:root body #app .page > .top:has(> .between > .flex > [data-action="back"]) {
+  padding-inline-start: 16px;
+}
+html:root body #app .page > .top:has(> .between > .flex > [data-action="back"]) > .between {
+  max-width: none;
+}
+html:root body #app .desktop-list-scroll .account-sync-status { margin-top: 10px; }
+html:root body #app .wx-menu-group > .wx-menu-row { position: relative; border-bottom: 0 !important; }
+html:root body #app .wx-menu-group > .wx-menu-row:not(:last-child)::before {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 0;
+  height: 1px;
+  content: "";
+  background: var(--line);
+  pointer-events: none;
+}
+@media (min-height: 720px) {
+  html:root #app .wx-my-profile .wx-profile-main { padding-block: clamp(12px, 2vh, 22px); }
+  html:root #app .wx-my-profile .wx-menu-row { min-height: clamp(44px, 7.1vh, 59px); }
+}
+html.mz-cyber:root:root #app :is(.page > .content,.mz-listen-actions,.moments-feed,.contact-mode) { margin-top: 14px; }
+html.mz-cyber:root:root #app .page > .moments-view { padding-top: 14px; }
+html.mz-cyber:root:root #app .mz-settings-layout > .card { margin-bottom: 14px; }
+html.mz-cyber:root:root #app .content > .contact-mode { margin-top: 0; }
+html.mz-cyber:root:root #app .mz-dark-card :is(.mz-seg,.mz-segs,button) { border-radius: 0!important; }
+html:not(.mz-glass):root:root #app .conversation > header.top {
+  margin-inline: 0!important;
+  border-radius: 0!important;
+}
+html:root body .sticker-panel .sticker-grid button img { object-fit: contain; }
+html:root body .sticker-panel .sticker-grid button { content-visibility: auto; contain-intrinsic-block-size: auto 82px; }
+/* Main pages scroll inside the space above the measured height of the five-tab bar. */
+html:root body #app:has(> .nav) {
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+}
+html:root body #app:has(> .nav) > .page {
+  grid-row:2;
+  height:100%;
+  min-height:0;
+  padding-bottom:18px;
+}
+html:root:root body #app#app > .nav {
+  grid-row:3;
+  position:relative;
+  inset:auto!important;
+  margin:0 0 var(--mz-nav-bottom,0px);
+}
+html.mz-glass:root:root body #app#app > .nav { margin-inline:12px; }
+
+#app .page :is(.help,.small,.feature-note):not(:is(.card,.sheet,.message,.moment,.wx-menu-group,.search,.soft-note,.top,button,label,.chat-entry,.mz-cgroup) *) {
+  font-weight:700;
+}
+#app [data-action="importFont"] { margin-top:14px; }
+.mz-account-actions { justify-content:flex-end; margin-top:8px; }
+.mz-account-actions [data-action="humanLogout"] { padding-inline:10px; }
+.mz-settings-memory .card:has(> .mz-settings-divider)>[data-page="individual"],
+.mz-settings-api .card:has(>[data-action="voiceSettings"])>.setting-row {
+  border-bottom:0!important;
+}
+html:root:root body :is(#app,#overlay) :is(.memory-grid>button.selected,.mz-reply-style>[aria-pressed="true"]) {
+  background:color-mix(in srgb,var(--accent) 37%,var(--surface,var(--bg)))!important;
+  color:var(--ink)!important;
+  border-color:var(--accent)!important;
+  box-shadow:inset 0 0 0 1px var(--accent)!important;
+}
+html:root:root body #app .mz-reply-style>[aria-pressed="true"] :is(b,.small) { color:var(--ink)!important; }
+html:root:root body #app .message .bubble:is(.sticker-only,.sticker-like),
+html:root:root body #app :is(
+  .chat-sticker,.chat-sticker img,.sticker-draft,.sticker-draft img,
+  .sticker-attachments,.sticker-attachment img,.sticker-photo,.sticker-photo img,
+  .bubble.sticker-like .photos,
+  .sticker-panel button:is([data-selectsticker],[data-send-custom-sticker]),
+  .sticker-panel :is([data-selectsticker],[data-send-custom-sticker]) img
+) {
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  clip-path:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+html:root:root body #app .bubble.photo-only .photos button {
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+html:root:root body #app :is(.chat-sticker img,.bubble.photo-only .photos img,.sticker-photo img,.sticker-draft img,.sticker-attachment img,.sticker-panel .sticker-grid img) { outline:none!important; }
+html:root:root body #app .bubble:is(.sticker-only,.sticker-like)::before,
+html:root:root body #app .bubble:is(.sticker-only,.sticker-like)::after { content:none!important; }
+.sticker-panel .sticker-grid[hidden] { display:none; }
+html[data-mz-cyber-font] body,html[data-mz-cyber-font] :is(button,input,textarea,select),button[data-font="cyber"] {
+  text-shadow:0 1px var(--accent);
+}
+
+/* Keep Cyberpunk corners square even where shared glass or desktop rules use !important. */
+html.mz-cyber:root:root body #app#app,
+html.mz-cyber:root:root body :is(#app#app,#overlay#overlay) :is(
+  .desktop-shell,.desktop-workspace,.desktop-list-scroll,.desktop-rail,.page,.nav,.nav button,
+  .chat-entry,.chat-row,.chat-menu-button,.account-sync-status,.search,.conversation,.composer-menu,.composer-menu button,
+  .moments-view,.moment-top,.moments-cover-frame,.moments-cover-frame .cover,.moment .photos button,.moment .photos img,.moment .comments,
+  .wx-my-profile,.wx-profile-main,.wx-status-bubble,.wx-menu-group,.wx-menu-row,
+  .top,.sheet,.setting-choice,.provider-grid button,.model-grid button,.memory-grid button,.wx-menu-icon,.setting-icon,
+  .mz-help-chip,.mz-todo-tabs button,.mz-segs button,.macaron-select,.macaron-picker,.macaron-option,
+  input,textarea,select,.switch
+) { border-radius:0!important; }
+html.mz-cyber:root:root body .switch::after { border-radius:0!important; }
+html.mz-cyber:root:root body #app .wx-my-profile { background:transparent!important; }
+html.mz-cyber:root:root body #app .moment-top { border-radius:0!important; }
+html.mz-cyber:root:root body .desktop-workspace > .page:has(>.moments-view) { padding-top:0!important; }
+html.mz-cyber:root:root body #app .desktop-workspace > .page > .moments-view { padding-top:0; }
+html.mz-cyber:root:root body #app .desktop-workspace > .page > .moment-top { top:0; margin-top:0!important; }
+html.mz-cyber:root:root body :is(#app,#overlay) :is(.composer-menu button,.chat-entry,.chat-row,.search,.chat-menu-button,.account-sync-status,.memory-grid button,.mz-reply-style button,.setting-choice) { clip-path:none!important; }
+html.mz-cyber:root:root body .macaron-picker,
+html.mz-cyber:root:root body .macaron-picker :is(button,[role="option"]) { border-radius:0!important; }
+
+/* Each decoration is part of one painted surface so glass blurs through the full silhouette. */
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles):root:root body #app#app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only) {
+  position:relative;
+  isolation:isolate;
+  overflow:visible;
+  margin-block:12px;
+  min-inline-size:60px;
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  --mz-creature-fill:color-mix(in srgb,var(--surface) 72%,var(--soft));
+  --mz-creature-edge:color-mix(in srgb,var(--ink) 22%,transparent);
+}
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles):root:root body #app#app .message.mine .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only) { --mz-creature-fill:var(--soft); }
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles).mz-glass:root:root body #app#app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only) {
+  --mz-creature-fill:var(--glass);
+  --mz-creature-edge:var(--glass-hi);
+}
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles):root body #app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only)::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:calc(-1 * var(--mz-creature-rise,9px)) -3px -9px;
+  background:var(--mz-creature-details) var(--mz-creature-fill);
+  pointer-events:none;
+  clip-path:var(--mz-creature-shape);
+}
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles).mz-glass:root body #app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only)::before {
+  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(6px);
+  background:linear-gradient(150deg,color-mix(in srgb,var(--glass-hi) 38%,transparent),transparent 38%),var(--mz-creature-details) var(--mz-creature-fill);
+}
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles):root body #app .message.mine .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only)::before { transform:scaleX(-1); }
+html.mz-cat-bubbles #app .message .bubble {
+  --mz-creature-details:repeating-linear-gradient(83deg,transparent 0 8px,var(--mz-creature-edge) 8px 9px) right 6px bottom / 38px 9px no-repeat;
+  --mz-creature-shape:polygon(3px 20px,7px 13px,13px 9px,19% 9px,24% 0,32% 9px,62% 9px,70% 0,75% 9px,calc(100% - 14px) 9px,calc(100% - 6px) 13px,calc(100% - 3px) 21px,calc(100% - 3px) calc(100% - 26px),100% calc(100% - 21px),100% calc(100% - 9px),calc(100% - 6px) calc(100% - 2px),calc(100% - 18px) 100%,calc(100% - 44px) 100%,calc(100% - 53px) calc(100% - 4px),calc(100% - 48px) calc(100% - 9px),13px calc(100% - 9px),7px calc(100% - 13px),3px calc(100% - 20px));
+}
+html.mz-jelly-bubbles #app .message .bubble {
+  --mz-creature-rise:16px;
+  --mz-jelly-organ:#2272d6;
+  --mz-creature-details:
+    radial-gradient(ellipse 4px 3px at calc(50% - 5px) 9px,var(--mz-jelly-organ) 55%,transparent 86%),
+    radial-gradient(ellipse 4px 3px at calc(50% + 5px) 9px,var(--mz-jelly-organ) 55%,transparent 86%),
+    radial-gradient(ellipse 3px 3px at 50% 5px,var(--mz-jelly-organ) 55%,transparent 86%),
+    radial-gradient(ellipse 3px 3px at 50% 13px,var(--mz-jelly-organ) 55%,transparent 86%);
+  --mz-creature-shape:polygon(2px 28px,7px 21px,15px 16px,21% 16px,25% 11px,33% 5px,42% 1px,50% 0,58% 1px,67% 5px,75% 11px,79% 16px,calc(100% - 15px) 16px,calc(100% - 7px) 21px,calc(100% - 2px) 28px,calc(100% - 2px) calc(100% - 22px),calc(100% - 7px) calc(100% - 14px),calc(100% - 15px) calc(100% - 9px),15px calc(100% - 9px),7px calc(100% - 14px),2px calc(100% - 22px));
+}
+html.mz-jelly-bubbles.mz-dark #app .message .bubble {
+  --mz-jelly-organ:#80c9ff;
+}
+html.mz-jelly-bubbles:root body #app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only)::after {
+  content:"";
+  position:absolute;
+  inset:auto auto -6px calc(50% - 1px);
+  width:2px;
+  height:6px;
+  border-radius:0 0 2px 2px;
+  color:color-mix(in srgb,var(--mz-jelly-organ) 50%,var(--glass-hi));
+  background:currentColor;
+  box-shadow:-24px -2px,-16px 0,-8px -1px,8px -1px,16px 0,24px -2px;
+  pointer-events:none;
+}
+html.mz-peer-off:root:root body #app#app .message:not(.mine) .bubble::before,
+html.mz-peer-off:root:root body #app#app .message:not(.mine) .bubble::after { content:none; }
+html.mz-peer-off:root:root body #app#app .message:not(.mine) .bubble { min-inline-size:0; margin-block:0; }
+
+
+
+html.mz-jelly:root:root body #app .wx-menu-group > .wx-menu-row {
+  background-image:none!important;
+}
+html.mz-jelly:root:root body #app .wx-menu-group > .wx-menu-row:not(:last-child)::before {
+  height:6px;
+  background:var(--jl-wave) left bottom / 64px 6px repeat-x;
+}
+html.mz-neon:root:root body #app :is(.nav-icon,.setting-icon,.wx-menu-icon,.icon-button:not([type="submit"],.primary)) {
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+html.mz-neon:root:root body #app :is(.nav-icon,.setting-icon,.wx-menu-icon,.icon-button:not([type="submit"],.primary))::before {
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+html.mz-cyber:root:root body #app :is(.contact-mode,.mizuki-record-tabs)::before {
+  border-radius:0!important;
+  background:linear-gradient(90deg,var(--cp),var(--cc)) left top / 100% 1px no-repeat,
+    linear-gradient(90deg,var(--cc),var(--cp)) right bottom / 100% 1px no-repeat,
+    color-mix(in srgb,var(--cbtn) 76%,var(--cv))!important;
+  clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px));
+}
+html.mz-cyber:root:root body #overlay .mz-lang-option[aria-pressed="true"],
+html.mz-cyber:root:root body #overlay .mz-format-example,
+html.mz-cyber:root:root body #app .sound-switch span,
+html.mz-cyber:root:root body #app .sound-switch span::before {
+  border-radius:0!important;
+}
+.wx-device-icon svg { width:22px;height:22px;display:block; }
+html.mz-cyber:root:root body #app .wx-device-icon { border-radius:0!important; }
+html.mz-glass:root:root body #app .moments-cover-frame {
+  border-radius:22px 22px 0 0;
+}
+html.mz-glass:root:root body #app .moments-cover-frame > .moment-top {
+  inset:0 0 auto!important;
+  margin:0!important;
+  border-top-left-radius:inherit!important;
+  border-top-right-radius:inherit!important;
+}
+html:not(.mz-glass):root:root body #app :is(.moments-cover-frame,.moments-cover-frame > .moment-top) {
+  border-radius:0!important;
+}
+
