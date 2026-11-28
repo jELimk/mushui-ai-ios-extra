@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>jELi</title>
+<style>
+/* the pet always uses Mizuki's pixel font (Fusion Pixel), never the app's font choice */
+@font-face{font-family:mzPetPixel;src:url("fonts/mz-pixel.woff2") format("woff2")}
+html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webkit-user-select:none;font-family:mzPetPixel,monospace}
+#tip,#txt div{font-family:mzPetPixel,monospace!important}
+canvas{display:block;image-rendering:pixelated}
+#txt{position:absolute;inset:0;pointer-events:none}
+#txt div{position:absolute;color:#7f45ba;white-space:pre-wrap;line-height:1.25;word-break:break-all}
+#tip{position:fixed;display:none;padding:3px 8px;border:2px solid #b985ee;border-radius:8px;background:#e9d7ff;color:#5b2e86;font-size:12px;pointer-events:none;white-space:nowrap}
+body.hand,body.hand *{cursor:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="txt"></div>
+<div id="tip"></div>
+<script src="pet.js"></script>
+</body>
+</html>
