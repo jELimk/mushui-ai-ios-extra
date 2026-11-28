@@ -1,0 +1,469 @@
+/* Shared layout for the compact settings pages and theme-specific bubbles. */
+.mz-settings-divider {
+  height: 1px;
+  border: 0;
+  margin: 6px 6px;
+  background: var(--line);
+}
+.mz-settings-layout > .card { margin-bottom: 10px; }
+.mz-settings-layout .card .setting-row { padding-block: 9px; min-height: 40px; }
+.mz-settings-layout p.help, .mz-settings-layout p.small { margin-block: 6px; }
+.mz-settings-layout .toggle-row { padding-block: 6px; }
+.mz-settings-layout .mz-compact-test { padding-block: 10px; }
+.mz-settings-layout .mz-compact-test textarea { min-height: 36px; }
+.mz-settings-api label { margin-block: 7px 4px; }
+.mz-settings-api :is(input,.link-button,.provider-grid button,.model-grid button) { min-height: 34px; padding-block: 4px; }
+.mz-settings-api .card { padding-block: 10px; }
+.mz-settings-api .mz-model-note { margin-top: 4px; }
+.mz-settings-api :is(.provider-help,.api-key-row .small,.mz-model-note,.mz-api-note) { line-height: 1.35; }
+.mz-settings-api .api-key-row { margin-top: 2px; }
+.mz-settings-api .provider-grid, .mz-settings-api .model-grid { gap: 4px; }
+.mz-api-connection > summary { cursor: pointer; font-weight: 700; padding-block: 4px; }
+.mz-api-connection > .card { margin: 8px 0 0; }
+.mz-api-connection > [hidden] { display:none!important; }
+.mz-settings-api > :is(.mz-model-note,.mz-api-note) { margin-block: 4px; }
+.mz-settings-api > .link-button { margin-block: 0; }
+.mz-settings-layout .mz-compact-test .mz-safety-result:empty { display: none; }
+.mz-settings-chat .section-label { margin-block-start: 18px; }
+.mz-settings-privacy .mz-applock-card:has([data-action="mzLockDisable"]) { display:flex; flex-direction:column; align-items:flex-start; }
+.mz-settings-privacy .mz-applock-card:has([data-action="mzLockDisable"]) [data-action="mzLockSetup"] { order:1; }
+html:root body .memory-grid .selected {
+  background: var(--accent) !important;
+  color: var(--surface, white) !important;
+  border-color: var(--accent) !important;
+}
+html:root:root body #app .page > .top:has(> .between > .flex > [data-action="back"]) {
+  padding-inline-start: 16px;
+}
+html:root body #app .page > .top:has(> .between > .flex > [data-action="back"]) > .between {
+  max-width: none;
+}
+html:root body #app .desktop-list-scroll .account-sync-status { margin-top: 10px; }
+html:root body #app .wx-menu-group > .wx-menu-row { position: relative; border-bottom: 0 !important; }
+html:root body #app .wx-menu-group > .wx-menu-row:not(:last-child)::before {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 0;
+  height: 1px;
+  content: "";
+  background: var(--line);
+  pointer-events: none;
+}
+@media (min-height: 720px) {
+  html:root #app .wx-my-profile .wx-profile-main { padding-block: clamp(12px, 2vh, 22px); }
+  html:root #app .wx-my-profile .wx-menu-row { min-height: clamp(44px, 7.1vh, 59px); }
+}
+html.mz-cyber:root:root #app :is(.page > .content,.mz-listen-actions,.moments-feed,.contact-mode) { margin-top: 14px; }
+html.mz-cyber:root:root #app .page > .moments-view { padding-top: 14px; }
+html.mz-cyber:root:root #app .mz-settings-layout > .card { margin-bottom: 14px; }
+html.mz-cyber:root:root #app .content > .contact-mode { margin-top: 0; }
+html.mz-cyber:root:root #app .mz-dark-card :is(.mz-seg,.mz-segs,button) { border-radius: 0!important; }
+html:not(.mz-glass):root:root #app .conversation > header.top {
+  margin-inline: 0!important;
+  border-radius: 0!important;
+}
+html:root body .sticker-panel .sticker-grid button img { object-fit: contain; }
+html:root body .sticker-panel .sticker-grid button { content-visibility: auto; contain-intrinsic-block-size: auto 82px; }
+/* Main pages scroll inside the space above the measured height of the five-tab bar. */
+html:root body #app:has(> .nav) {
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+}
+html:root body #app:has(> .nav) > .page {
+  grid-row:2;
+  height:100%;
+  min-height:0;
+  padding-bottom:18px;
+}
+html:root:root body #app#app > .nav {
+  grid-row:3;
+  position:relative;
+  inset:auto!important;
+  margin:0 0 var(--mz-nav-bottom,0px);
+}
+html.mz-glass:root:root body #app#app > .nav { margin-inline:12px; }
+@media (max-width: 699px), (pointer: coarse) {
+  html:root:root body #app#app > .nav {
+    margin-bottom: max(0px, calc(var(--mz-nav-bottom, 0px) - 5px));
+  }
+  html.mz-e2e:root:root body #app#app > .nav { margin-bottom: 3px; }
+}
+
+/* Keep cover art sized to the resting viewport as the keyboard resizes the chat. */
+.conversation.with-chat-backdrop { position: relative; isolation: isolate; overflow: clip; }
+.conversation.with-chat-backdrop::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 auto;
+  height: var(--mz-chat-art-height, 100%);
+  background: var(--mz-chat-backdrop, none) center / cover no-repeat;
+  pointer-events: none;
+}
+body:has(#app :is(textarea,input,[contenteditable="true"]):focus) :is(#mz-jelly-sea,.mz-cat-yard,#mz-cat-yard) * {
+  animation-play-state: paused !important;
+}
+
+html {
+  --mz-input-mark: color-mix(in srgb, var(--accent-deep) 72%, #111827);
+  --mz-input-mark-text: #fff;
+}
+html.mz-dark {
+  --mz-input-mark: color-mix(in srgb, var(--accent) 43%, #fff);
+  --mz-input-mark-text: #111827;
+}
+html:root body :is(input,textarea,[contenteditable="true"]) { caret-color: var(--mz-input-mark) !important; }
+html:root:root body :is(input,textarea,[contenteditable="true"])::selection,
+html:root:root body [contenteditable="true"] *::selection {
+  background: var(--mz-input-mark) !important;
+  color: var(--mz-input-mark-text) !important;
+}
+
+html:root:root body button#mzListenBand { border-radius: 999px; margin-bottom: 5px; }
+html.mz-cyber:root:root body button#mzListenBand { border-radius: 0; }
+html:root body .sheet:has(> .mz-todo-wrap) .sheet-title::after { display: none; }
+html:root:root body .mzc-chips .mzc-chip[aria-pressed="true"] {
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, #fff) !important;
+  background: color-mix(in srgb, var(--accent) 48%, #fff) !important;
+  color: #1a1722 !important;
+}
+
+html:root:root #app .wx-my-profile {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  container-type: size;
+  box-sizing: border-box;
+  height: 100%;
+  padding-block: 10px;
+}
+html:root:root #app .wx-my-profile .wx-profile-main { padding-block: clamp(4px, 1.6cqh, 18px); }
+html:root:root #app .wx-my-profile .wx-profile-main .avatar {
+  width: clamp(48px, 13cqh, 96px);
+  height: clamp(48px, 13cqh, 96px);
+  min-width: clamp(48px, 13cqh, 96px);
+}
+html:root:root #app .wx-my-profile .wx-menu-row {
+  min-height: clamp(38px, 8.6cqh, 74px);
+  padding-block: clamp(3px, 1cqh, 12px);
+}
+html:root:root #app .wx-my-profile .wx-menu-group { margin-bottom: clamp(3px, 1.2cqh, 14px); }
+html:root:root #app .wx-my-profile .wx-profile-note { margin-block: 0; }
+.mz-daily-menu .wx-menu-icon svg { width: 20px; height: 20px; }
+.mz-moods { border: 0; margin: 0; padding: 0; }
+.mz-moods > div { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 4px; }
+.mz-moods label { margin: 4px 0; text-align: center; cursor: pointer; }
+.mz-moods input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.mz-moods span { display: grid; justify-items: center; gap: 4px; padding: 6px 1px; border: 1px solid transparent; border-radius: 9px; }
+.mz-moods input:checked + span { background: var(--soft); color: var(--ink); border-color: var(--accent); }
+.mz-moods input:focus-visible + span { outline: 2px solid var(--accent); }
+.mz-moods svg,.wx-status-label svg { width: 22px; height: 22px; vertical-align: middle; margin-inline-end: 3px; }
+.mz-weather-report svg { width: 42px; height: 42px; vertical-align: middle; margin-inline-end: 12px; }
+.mz-weather-report strong { font-size: 26px; }
+.mz-ai-chat-options { display: grid; gap: 8px; }
+.mz-ai-chat-options > .card { margin: 0; }
+.mz-photo-choices { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+.mz-photo-choices .pill { padding-inline: 5px; white-space: normal; }
+.mz-crop-card { max-height: 90dvh; overflow: auto; }
+.mz-crop-card .mz-crop-stage { width: min(280px, 76vw, 45dvh); }
+.mz-custom-avatar { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+
+html {
+  --mz-status-safe: max(env(safe-area-inset-top, 0px), var(--mz-sat, 0px), var(--mz-ios-top, 0px));
+  --mz-bottom-safe: max(env(safe-area-inset-bottom, 0px), var(--mz-sab, 0px), var(--mz-ios-bottom, 0px));
+  --mz-left-safe: max(env(safe-area-inset-left, 0px), var(--mz-ios-left, 0px));
+  --mz-right-safe: max(env(safe-area-inset-right, 0px), var(--mz-ios-right, 0px));
+}
+@media (max-width: 849px), (pointer: coarse) {
+  html:root body { min-width: 0; }
+  html:root body :is(#app,.modal-backdrop,#mzListen.mz-big) { box-sizing:border-box; }
+  html:root body #app {
+    --mz-nav-bottom: calc(var(--mz-bottom-safe) + 8px);
+    padding: var(--mz-status-safe) var(--mz-right-safe) var(--mz-bottom-safe) var(--mz-left-safe);
+  }
+  html:root body #app > .nav {
+    bottom: var(--mz-nav-bottom) !important;
+    inset-inline: max(var(--mz-nav-gutter, 0px), var(--mz-left-safe)) max(var(--mz-nav-gutter, 0px), var(--mz-right-safe)) !important;
+  }
+  html.mz-glass body #app > .nav { --mz-nav-gutter: 12px; }
+  html:root body #app > .nav > button { min-width:0; flex:1 1 0; }
+  html:root body.keyboard-open #app { padding-bottom: 0; }
+  html:root body .modal-backdrop {
+    padding-top: calc(var(--mz-status-safe) + 8px);
+    padding-inline: var(--mz-left-safe) var(--mz-right-safe);
+  }
+  html:root body :is(.mz-lock,.mz-crop-overlay,.macaron-picker-backdrop,#mz-alarm-ring) {
+    box-sizing: border-box;
+    padding: calc(var(--mz-status-safe) + 12px) calc(var(--mz-right-safe) + 12px)
+             calc(var(--mz-bottom-safe) + 12px) calc(var(--mz-left-safe) + 12px);
+  }
+  html:root body :is(.mz-lock > .mizuki-gate,.mz-crop-card,.macaron-picker,.mz-ar-box) {
+    max-height: min(100%, calc(100dvh - var(--mz-status-safe) - var(--mz-bottom-safe) - 24px));
+    overflow-y: auto;
+  }
+  html:root body :is(#mz-reader,#mz-kao) {
+    padding-inline: var(--mz-left-safe) var(--mz-right-safe);
+  }
+  html:root body #mz-welcome { padding-inline: calc(var(--mz-left-safe) + 20px) calc(var(--mz-right-safe) + 20px); padding-bottom: calc(var(--mz-bottom-safe) + 16px); overflow-y: auto; }
+  html:root body :is(#mzCallPill,#mzDeviceCall,#mzGroupCallTop) { top: calc(var(--mz-status-safe) + 8px); }
+  html:root body #mzGroupCallPanel {
+    bottom: calc(var(--mz-bottom-safe) + 92px);
+    right: calc(var(--mz-right-safe) + 12px);
+    max-height: calc(100dvh - var(--mz-status-safe) - var(--mz-bottom-safe) - 100px);
+    overflow-y: auto;
+  }
+  html:root body .mz-call .mz-call-top {
+    padding-inline: calc(var(--mz-left-safe) + 16px) calc(var(--mz-right-safe) + 16px);
+  }
+  html:root body .mz-rd-panel { padding-inline: calc(var(--mz-left-safe) + 16px) calc(var(--mz-right-safe) + 16px); }
+  html:root body .mz-kao-tray { left: calc(var(--mz-left-safe) + 12px); right: calc(var(--mz-right-safe) + 12px); }
+  html:root body .modal-backdrop > .sheet {
+    min-height: 0;
+    max-height: min(92dvh, calc(var(--app-height, 100dvh) - var(--mz-status-safe) - 8px));
+    padding-bottom:calc(24px + var(--mz-bottom-safe)) !important;
+  }
+  html:root body.keyboard-open .modal-backdrop > .sheet { padding-bottom:24px !important; }
+  html:root body #mzListen.mz-big {
+    justify-content: safe center;
+    overflow-y: auto;
+    padding: calc(var(--mz-status-safe) + 8px) calc(18px + var(--mz-right-safe))
+             calc(20px + var(--mz-bottom-safe)) calc(18px + var(--mz-left-safe));
+  }
+  html:root body #mzListen.mz-big > .mz-listen-head {
+    position: sticky;
+    width: min(100%, 760px);
+    margin-bottom: 8px;
+    z-index: 1;
+  }
+  html:root body .mz-call:not(.mz-min) .mz-call-actions { bottom:calc(var(--mz-bottom-safe) + 16px); }
+  html:root body :is(#mzCallBar,.mz-rd-top,.mz-kao-top,#mz-welcome) { padding-top:calc(var(--mz-status-safe) + 8px); }
+}
+html:root body #app > #mzListenBand { padding-top: 5px; }
+html:root body #mzListen.mz-big .mz-listen-head { top: max(calc(var(--mz-status-safe) + 8px), var(--mz-player-below, 0px)); }
+html:root body .mz-call .mz-call-top { padding-top: calc(var(--mz-status-safe) + 8px); }
+#mzListen.mz-away { visibility: hidden; pointer-events: none; }
+html.mz-glass:root:root body #app .model-grid button {
+  background: var(--glass-strong, var(--glass)) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+html.mz-glass:root:root body #app .model-grid button.selected {
+  background: color-mix(in srgb, var(--glass-strong) 75%, var(--accent)) !important;
+}
+html:root body .call-overlay.mz-aic:not(.mz-video,.mz-min) {
+  display: grid;
+  grid-template: auto auto minmax(0, 1fr) auto auto / minmax(0, 1fr);
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 8px;
+  padding: 0 calc(16px + var(--mz-right-safe)) calc(var(--mz-bottom-safe) + 14px) calc(16px + var(--mz-left-safe));
+}
+html:root body .call-overlay.mz-aic:not(.mz-video,.mz-min) :is(.mz-call-top,.mz-call-id,.mz-aic-log,.mz-aic-bar,.mz-call-actions) {
+  position: relative;
+  inset: auto;
+  grid-column: 1;
+  min-height: 0;
+}
+html:root body .call-overlay.mz-aic:not(.mz-video,.mz-min) .mz-call-top { grid-row: 1; padding-inline: 0; }
+html:root body .call-overlay.mz-aic:not(.mz-video,.mz-min) .mz-call-id { grid-row: 2; gap: 5px; }
+html:root body .call-overlay.mz-aic:not(.mz-video,.mz-min) .mz-aic-log {
+  grid-row: 3;
+  align-self: stretch;
+  height: auto;
+  max-height: 100%;
+  mask: none;
+}
+html:root body .call-overlay.mz-aic:not(.mz-video,.mz-min) .mz-aic-bar { grid-row: 4; }
+html:root body .call-overlay.mz-aic:not(.mz-video,.mz-min) .mz-call-actions { grid-row: 5; gap: 8px; }
+.mz-aic .mz-aic-msg { flex-shrink: 0; }
+.mz-aic .mz-aic-msg span { padding: 7px 10px; font-size: clamp(12px, 3.5vw, 14px); }
+.mz-aic #voiceCallStatus { white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+.mz-recalled { text-align: center; color: var(--muted); font-size: .85em; margin: 14px 0; overflow-wrap: anywhere; }
+.mz-chat-avatar { display: inline-flex; flex: none; border: 0; background: transparent; padding: 0; }
+.moment .photos img, .mz-lightbox img { image-rendering: auto; filter: none; }
+
+#app .page :is(.help,.small,.feature-note):not(:is(.card,.sheet,.message,.moment,.wx-menu-group,.search,.soft-note,.top,button,label,.chat-entry,.mz-cgroup) *) {
+  font-weight:700;
+}
+#app [data-action="importFont"] { margin-top:14px; }
+.mz-account-actions { justify-content:flex-end; margin-top:8px; }
+.mz-account-actions [data-action="humanLogout"] { padding-inline:10px; }
+.mz-settings-memory .card:has(> .mz-settings-divider)>[data-page="individual"],
+.mz-settings-api .card:has(>[data-action="voiceSettings"])>.setting-row {
+  border-bottom:0!important;
+}
+html:root:root body :is(#app,#overlay) :is(.memory-grid>button.selected,.mz-reply-style>[aria-pressed="true"]) {
+  background:color-mix(in srgb,var(--accent) 37%,var(--surface,var(--bg)))!important;
+  color:var(--ink)!important;
+  border-color:var(--accent)!important;
+  box-shadow:inset 0 0 0 1px var(--accent)!important;
+}
+html:root:root body #app .mz-reply-style>[aria-pressed="true"] :is(b,.small) { color:var(--ink)!important; }
+html:root:root body #app .message .bubble:is(.sticker-only,.sticker-like),
+html:root:root body #app :is(
+  .chat-sticker,.chat-sticker img,.sticker-draft,.sticker-draft img,
+  .sticker-attachments,.sticker-attachment img,.sticker-photo,.sticker-photo img,
+  .bubble.sticker-like .photos,
+  .sticker-panel button:is([data-selectsticker],[data-send-custom-sticker]),
+  .sticker-panel :is([data-selectsticker],[data-send-custom-sticker]) img
+) {
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  clip-path:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+html:root:root body #app .bubble.photo-only .photos button {
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+html:root:root body #app :is(.chat-sticker img,.bubble.photo-only .photos img,.sticker-photo img,.sticker-draft img,.sticker-attachment img,.sticker-panel .sticker-grid img) { outline:none!important; }
+html:root:root body #app .bubble:is(.sticker-only,.sticker-like)::before,
+html:root:root body #app .bubble:is(.sticker-only,.sticker-like)::after { content:none!important; }
+.sticker-panel .sticker-grid[hidden] { display:none; }
+html[data-mz-cyber-font] body,html[data-mz-cyber-font] :is(button,input,textarea,select),button[data-font="cyber"] {
+  text-shadow:0 1px var(--accent);
+}
+
+/* Keep Cyberpunk corners square even where shared glass or desktop rules use !important. */
+html.mz-cyber:root:root body #app#app,
+html.mz-cyber:root:root body :is(#app#app,#overlay#overlay) :is(
+  .desktop-shell,.desktop-workspace,.desktop-list-scroll,.desktop-rail,.page,.nav,.nav button,
+  .chat-entry,.chat-row,.chat-menu-button,.account-sync-status,.search,.conversation,.composer-menu,.composer-menu button,
+  .moments-view,.moment-top,.moments-cover-frame,.moments-cover-frame .cover,.moment .photos button,.moment .photos img,.moment .comments,
+  .wx-my-profile,.wx-profile-main,.wx-status-bubble,.wx-menu-group,.wx-menu-row,
+  .top,.sheet,.setting-choice,.provider-grid button,.model-grid button,.memory-grid button,.wx-menu-icon,.setting-icon,
+  .mz-help-chip,.mz-todo-tabs button,.mz-segs button,.macaron-select,.macaron-picker,.macaron-option,
+  input,textarea,select,.switch
+) { border-radius:0!important; }
+html.mz-cyber:root:root body .switch::after { border-radius:0!important; }
+html.mz-cyber:root:root body #app .wx-my-profile { background:transparent!important; }
+html.mz-cyber:root:root body #app .moment-top { border-radius:0!important; }
+html.mz-cyber:root:root body .desktop-workspace > .page:has(>.moments-view) { padding-top:0!important; }
+html.mz-cyber:root:root body #app .desktop-workspace > .page > .moments-view { padding-top:0; }
+html.mz-cyber:root:root body #app .desktop-workspace > .page > .moment-top { top:0; margin-top:0!important; }
+html.mz-cyber:root:root body :is(#app,#overlay) :is(.composer-menu button,.chat-entry,.chat-row,.search,.chat-menu-button,.account-sync-status,.memory-grid button,.mz-reply-style button,.setting-choice) { clip-path:none!important; }
+html.mz-cyber:root:root body .macaron-picker,
+html.mz-cyber:root:root body .macaron-picker :is(button,[role="option"]) { border-radius:0!important; }
+
+/* Each decoration is part of one painted surface so glass blurs through the full silhouette. */
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles):root:root body #app#app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only) {
+  position:relative;
+  isolation:isolate;
+  overflow:visible;
+  margin-block:12px;
+  min-inline-size:60px;
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  --mz-creature-fill:color-mix(in srgb,var(--surface) 72%,var(--soft));
+  --mz-creature-edge:color-mix(in srgb,var(--ink) 22%,transparent);
+}
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles):root:root body #app#app .message.mine .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only) { --mz-creature-fill:var(--soft); }
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles).mz-glass:root:root body #app#app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only) {
+  --mz-creature-fill:var(--glass);
+  --mz-creature-edge:var(--glass-hi);
+}
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles):root body #app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only)::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:calc(-1 * var(--mz-creature-rise,9px)) -3px -9px;
+  background:var(--mz-creature-details) var(--mz-creature-fill);
+  pointer-events:none;
+  clip-path:var(--mz-creature-shape);
+}
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles).mz-glass:root body #app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only)::before {
+  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(6px);
+  background:linear-gradient(150deg,color-mix(in srgb,var(--glass-hi) 38%,transparent),transparent 38%),var(--mz-creature-details) var(--mz-creature-fill);
+}
+:is(html.mz-cat-bubbles,html.mz-jelly-bubbles):root body #app .message.mine .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only)::before { transform:scaleX(-1); }
+html.mz-cat-bubbles #app .message .bubble {
+  --mz-creature-details:repeating-linear-gradient(83deg,transparent 0 8px,var(--mz-creature-edge) 8px 9px) right 6px bottom / 38px 9px no-repeat;
+  --mz-creature-shape:polygon(3px 20px,7px 13px,13px 9px,19% 9px,24% 0,32% 9px,62% 9px,70% 0,75% 9px,calc(100% - 14px) 9px,calc(100% - 6px) 13px,calc(100% - 3px) 21px,calc(100% - 3px) calc(100% - 26px),100% calc(100% - 21px),100% calc(100% - 9px),calc(100% - 6px) calc(100% - 2px),calc(100% - 18px) 100%,calc(100% - 44px) 100%,calc(100% - 53px) calc(100% - 4px),calc(100% - 48px) calc(100% - 9px),13px calc(100% - 9px),7px calc(100% - 13px),3px calc(100% - 20px));
+}
+html.mz-jelly-bubbles #app .message .bubble {
+  --mz-creature-rise:16px;
+  --mz-jelly-organ:#2272d6;
+  --mz-creature-details:
+    radial-gradient(ellipse 4px 3px at calc(50% - 5px) 9px,var(--mz-jelly-organ) 55%,transparent 86%),
+    radial-gradient(ellipse 4px 3px at calc(50% + 5px) 9px,var(--mz-jelly-organ) 55%,transparent 86%),
+    radial-gradient(ellipse 3px 3px at 50% 5px,var(--mz-jelly-organ) 55%,transparent 86%),
+    radial-gradient(ellipse 3px 3px at 50% 13px,var(--mz-jelly-organ) 55%,transparent 86%);
+  --mz-creature-shape:polygon(2px 28px,7px 21px,15px 16px,21% 16px,25% 11px,33% 5px,42% 1px,50% 0,58% 1px,67% 5px,75% 11px,79% 16px,calc(100% - 15px) 16px,calc(100% - 7px) 21px,calc(100% - 2px) 28px,calc(100% - 2px) calc(100% - 22px),calc(100% - 7px) calc(100% - 14px),calc(100% - 15px) calc(100% - 9px),15px calc(100% - 9px),7px calc(100% - 14px),2px calc(100% - 22px));
+}
+html.mz-jelly-bubbles.mz-dark #app .message .bubble {
+  --mz-jelly-organ:#80c9ff;
+}
+html.mz-jelly-bubbles:root body #app .message .bubble:not(.sticker-only,.photo-only,.voice-bubble,.voice-only)::after {
+  content:"";
+  position:absolute;
+  inset:auto auto -6px calc(50% - 1px);
+  width:2px;
+  height:6px;
+  border-radius:0 0 2px 2px;
+  color:color-mix(in srgb,var(--mz-jelly-organ) 50%,var(--glass-hi));
+  background:currentColor;
+  box-shadow:-24px -2px,-16px 0,-8px -1px,8px -1px,16px 0,24px -2px;
+  pointer-events:none;
+}
+html.mz-peer-off:root:root body #app#app .message:not(.mine) .bubble::before,
+html.mz-peer-off:root:root body #app#app .message:not(.mine) .bubble::after { content:none; }
+html.mz-peer-off:root:root body #app#app .message:not(.mine) .bubble { min-inline-size:0; margin-block:0; }
+
+
+
+html.mz-jelly:root:root body #app .wx-menu-group > .wx-menu-row {
+  background-image:none!important;
+}
+html.mz-jelly:root:root body #app .wx-menu-group > .wx-menu-row:not(:last-child)::before {
+  height:6px;
+  background:var(--jl-wave) left bottom / 64px 6px repeat-x;
+}
+html.mz-neon:root:root body #app :is(.nav-icon,.setting-icon,.wx-menu-icon,.icon-button:not([type="submit"],.primary)) {
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+html.mz-neon:root:root body #app :is(.nav-icon,.setting-icon,.wx-menu-icon,.icon-button:not([type="submit"],.primary))::before {
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+html.mz-cyber:root:root body #app :is(.contact-mode,.mizuki-record-tabs)::before {
+  border-radius:0!important;
+  background:linear-gradient(90deg,var(--cp),var(--cc)) left top / 100% 1px no-repeat,
+    linear-gradient(90deg,var(--cc),var(--cp)) right bottom / 100% 1px no-repeat,
+    color-mix(in srgb,var(--cbtn) 76%,var(--cv))!important;
+  clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px));
+}
+html.mz-cyber:root:root body #overlay .mz-lang-option[aria-pressed="true"],
+html.mz-cyber:root:root body #overlay .mz-format-example,
+html.mz-cyber:root:root body #app .sound-switch span,
+html.mz-cyber:root:root body #app .sound-switch span::before {
+  border-radius:0!important;
+}
+.wx-device-icon svg { width:22px;height:22px;display:block; }
+html.mz-cyber:root:root body #app .wx-device-icon { border-radius:0!important; }
+html.mz-glass:root:root body #app .moments-cover-frame {
+  border-radius:22px 22px 0 0;
+}
+html.mz-glass:root:root body #app .moments-cover-frame > .moment-top {
+  inset:0 0 auto!important;
+  margin:0!important;
+  border-top-left-radius:inherit!important;
+  border-top-right-radius:inherit!important;
+}
+html:not(.mz-glass):root:root body #app :is(.moments-cover-frame,.moments-cover-frame > .moment-top) {
+  border-radius:0!important;
+}
+
+html.mz-desktop-hidden *,html.mz-desktop-hidden *::before,html.mz-desktop-hidden *::after{animation-play-state:paused!important}
+
